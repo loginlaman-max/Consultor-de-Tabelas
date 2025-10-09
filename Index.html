@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Produtos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a0aec0;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #718096;
+        }
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9CA3AF;
+        }
+        #searchInput {
+            padding-left: 48px;
+        }
+        .file-upload-wrapper {
+            border: 2px dashed #D1D5DB;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .file-upload-wrapper:hover {
+            background-color: #F9FAFB;
+        }
+        #fileInput {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <!-- Cabeçalho -->
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-800">Buscador de Produtos</h1>
+            <p class="text-gray-600 mt-2">Carregue suas planilhas e encontre qualquer produto em segundos.</p>
+        </header>
+
+        <!-- Seção de Upload -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8 max-w-2xl mx-auto">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4 text-center">Atualizar Base de Dados</h2>
+            <label for="fileInput" class="file-upload-wrapper block">
+                <i class="fas fa-upload fa-2x text-gray-400 mb-2"></i>
+                <p class="text-gray-600">Clique aqui para selecionar a planilha (.csv, .xls, .xlsx)</p>
+                <span id="fileName" class="text-sm text-gray-500 mt-1 block"></span>
+            </label>
+            <input type="file" id="fileInput" accept=".csv, .xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+            <button id="loadFileButton" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:bg-gray-400">
+                <i class="fas fa-plus-circle mr-2"></i> Adicionar ou Atualizar Dados
+            </button>
+            <p id="statusMessage" class="text-center mt-3 text-sm font-semibold"></p>
+        </div>
+        
+        <!-- Abas Carregadas e Barra de Busca -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8 max-w-4xl mx-auto">
+             <div class="mb-4">
+                <h3 class="text-lg font-semibold text-gray-700">Abas Carregadas na Base de Dados:</h3>
+                <div id="loadedSheets" class="flex flex-wrap gap-2 mt-2">
+                    <!-- Tags das abas carregadas serão inseridas aqui -->
+                </div>
+            </div>
+            <div class="relative">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Buscar em todas as abas por qualquer informação do produto..."
+                       class="w-full p-4 border border-gray-300 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200">
+            </div>
+        </div>
+
+        <!-- Resultados da Busca -->
+        <main id="resultsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Os cards de produtos serão inseridos aqui via JavaScript -->
+        </main>
+
+        <!-- Mensagem de Nenhum Resultado -->
+        <div id="noResults" class="hidden text-center text-gray-500 mt-12">
+            <i class="fas fa-box-open fa-3x mb-4"></i>
+            <p class="text-xl">Nenhum produto encontrado.</p>
+            <p>Tente ajustar seus termos de busca ou carregue uma nova planilha.</p>
+        </div>
+        
+        <!-- Estado Inicial -->
+        <div id="initialState" class="text-center text-gray-500 mt-12">
+            <i class="fas fa-database fa-3x mb-4"></i>
+            <p class="text-xl">Base de dados de exemplo carregada.</p>
+            <p>Comece a buscar ou carregue suas planilhas.</p>
+        </div>
+
+    </div>
+
+    <script>
+        let productDatabase = {
+            "Dados de Exemplo": [
+                { "Part Number": "DS-7232HGHI-M2", "Descrição do Produto": "1080p Lite | 32 Canais | H265+", "PV  ": "1746.38", "PP  ": "2349.99", "PSD  ": "2517.84", "PSCF  ": "2895.52" }
+            ]
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchInput');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const noResults = document.getElementById('noResults');
+            const initialState = document.getElementById('initialState');
+            const fileInput = document.getElementById('fileInput');
+            const loadFileButton = document.getElementById('loadFileButton');
+            const statusMessage = document.getElementById('statusMessage');
+            const fileNameSpan = document.getElementById('fileName');
+            const loadedSheetsContainer = document.getElementById('loadedSheets');
+
+            const updateLoadedSheetsUI = () => {
+                loadedSheetsContainer.innerHTML = '';
+                const sheetNames = Object.keys(productDatabase);
+                if (sheetNames.length === 0) {
+                    loadedSheetsContainer.innerHTML = '<p class="text-gray-500">Nenhuma aba carregada.</p>';
+                } else {
+                    sheetNames.forEach(name => {
+                        const productCount = productDatabase[name].length;
+                        const tag = `<span class="bg-gray-200 text-gray-800 text-sm font-medium me-2 px-2.5 py-1 rounded">${name} (${productCount})</span>`;
+                        loadedSheetsContainer.innerHTML += tag;
+                    });
+                }
+            };
+            
+            updateLoadedSheetsUI();
+            loadFileButton.disabled = true;
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    fileNameSpan.textContent = `Arquivo selecionado: ${file.name}`;
+                    loadFileButton.disabled = false;
+                } else {
+                    fileNameSpan.textContent = '';
+                    loadFileButton.disabled = true;
+                }
+            });
+            
+            const processSheetData = (dataAsArrayOfArrays, sheetName) => {
+                const idKeywords = ['part number', 'partnumber', 'modelo', 'model'];
+
+                let headerRowIndex = -1;
+                for (let i = 0; i < Math.min(dataAsArrayOfArrays.length, 20); i++) {
+                    const row = dataAsArrayOfArrays[i].map(h => String(h || '').toLowerCase().trim());
+                    let matchCount = 0;
+                    if (row.some(cell => idKeywords.some(kw => cell.includes(kw)))) {
+                         matchCount++;
+                    }
+                    if (row.some(cell => cell.includes('descri'))) matchCount++;
+                    if (row.some(cell => cell.includes('ean'))) matchCount++;
+                    if (row.some(cell => cell.includes('pv'))) matchCount++;
+
+                    if (matchCount >= 2) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
+
+                if (headerRowIndex === -1) return { error: `Cabeçalho não identificado na aba '${sheetName}'.` };
+                
+                const originalHeaders = dataAsArrayOfArrays[headerRowIndex];
+
+                let idColumnIndex = -1;
+                for(const keyword of idKeywords){
+                    idColumnIndex = originalHeaders.findIndex(h => String(h || '').toLowerCase().trim().includes(keyword));
+                    if(idColumnIndex !== -1) break;
+                }
+    
+                if (idColumnIndex === -1) {
+                     return { error: `Coluna de identificação (Part Number/Modelo) não encontrada na aba '${sheetName}'.` };
+                }
+
+                const mappedData = [];
+                for (let i = headerRowIndex + 1; i < dataAsArrayOfArrays.length; i++) {
+                    const rowData = dataAsArrayOfArrays[i];
+                    if (rowData[idColumnIndex] === undefined || rowData[idColumnIndex] === null || String(rowData[idColumnIndex]).trim() === '') {
+                        continue; 
+                    }
+                    const newRow = {};
+                    let hasData = false;
+                    originalHeaders.forEach((header, index) => {
+                        const headerName = String(header || `Coluna ${index + 1}`).trim();
+                        const cellValue = rowData[index];
+                        if (headerName !== '' && cellValue !== undefined && cellValue !== null && String(cellValue).trim() !== '') {
+                            newRow[headerName] = cellValue;
+                            hasData = true;
+                        }
+                    });
+                    if (hasData) mappedData.push(newRow);
+                }
+                
+                if (mappedData.length === 0) return { warning: `Nenhum produto válido encontrado na aba '${sheetName}'.` };
+                
+                return { success: true, data: mappedData, sheetName: sheetName };
+            };
+
+            const handleFile = (file) => {
+                if (!file) return;
+                statusMessage.textContent = 'Carregando e processando...';
+                statusMessage.className = 'text-center mt-3 text-sm text-blue-600 font-semibold';
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                const reader = new FileReader();
+
+                reader.onerror = () => {
+                    statusMessage.textContent = 'Não foi possível ler o arquivo.';
+                    statusMessage.className = 'text-center mt-3 text-sm text-red-600 font-semibold';
+                };
+
+                if (fileExtension === 'csv') {
+                     reader.onload = (e) => Papa.parse(e.target.result, {
+                        complete: (results) => {
+                            let sheetName = file.name.split('.')[0];
+                            const match = file.name.match(/- (.*?)\.csv/);
+                            if(match && match[1]) sheetName = match[1].trim();
+                            const result = processSheetData(results.data, sheetName);
+                            handleProcessResult([result]);
+                        }
+                     });
+                     reader.readAsText(file, 'UTF-8');
+                } else if (fileExtension === 'xls' || fileExtension === 'xlsx') {
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const results = [];
+                            workbook.SheetNames.forEach(sheetName => {
+                                const worksheet = workbook.Sheets[sheetName];
+                                const aoa = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                                results.push(processSheetData(aoa, sheetName));
+                            });
+                            handleProcessResult(results);
+                        } catch (err) {
+                            statusMessage.textContent = 'Erro ao processar o arquivo Excel.';
+                            statusMessage.className = 'text-center mt-3 text-sm text-red-600 font-semibold';
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
+            };
+
+            const handleProcessResult = (results) => {
+                const successMessages = [];
+                const errorMessages = [];
+                const warningMessages = [];
+                
+                results.forEach(result => {
+                    if (result.error) {
+                        errorMessages.push(result.error);
+                    } else if (result.warning) {
+                        warningMessages.push(result.warning);
+                    } else if (result.success) {
+                        productDatabase[result.sheetName] = result.data;
+                        successMessages.push(`'${result.sheetName}' (${result.data.length})`);
+                    }
+                });
+
+                let finalMessage = '';
+                let messageClass = '';
+
+                if (errorMessages.length > 0) {
+                    finalMessage = `Erros: ${errorMessages.join('; ')}`;
+                    messageClass = 'text-red-600';
+                } else if (successMessages.length > 0) {
+                    const totalProducts = Object.values(productDatabase).flat().length;
+                    finalMessage = `Carregamento concluído! Abas processadas: ${successMessages.join(', ')}. Total na base: ${totalProducts} produtos.`;
+                    messageClass = 'text-green-600';
+                } else {
+                    finalMessage = 'Nenhum dado novo foi carregado. Verifique o formato do arquivo.';
+                    messageClass = 'text-orange-600';
+                }
+                
+                if (warningMessages.length > 0){
+                    finalMessage += ` Avisos: ${warningMessages.join('; ')}`;
+                    if(!errorMessages.length) messageClass = 'text-orange-600';
+                }
+
+                statusMessage.textContent = finalMessage;
+                statusMessage.className = `text-center mt-3 text-sm font-semibold ${messageClass}`;
+
+                updateLoadedSheetsUI();
+                searchInput.value = '';
+                displayResults([]);
+                fileInput.value = '';
+                fileNameSpan.textContent = '';
+                loadFileButton.disabled = true;
+            };
+
+            loadFileButton.addEventListener('click', () => handleFile(fileInput.files[0]));
+
+            const formatPrice = (value) => {
+                let number;
+                if (typeof value === 'number') {
+                    number = value;
+                } else {
+                    const s = String(value).trim();
+                    if (s.includes(',')) {
+                        number = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+                    } else {
+                        number = parseFloat(s);
+                    }
+                }
+
+                if (isNaN(number)) {
+                    return value;
+                }
+                
+                return number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+            
+            const displayResults = (products) => {
+                resultsContainer.innerHTML = ''; 
+                initialState.style.display = searchInput.value.trim() === '' ? 'block' : 'none';
+                noResults.style.display = (searchInput.value.trim() !== '' && products.length === 0) ? 'block' : 'none';
+
+                const priceKeywords = ['pv', 'pp', 'psd', 'pscf'];
+
+                products.forEach(product => {
+                    let detailsHtml = '';
+                    const productEntries = Object.entries(product);
+                    
+                    productEntries.forEach(([key, value]) => {
+                        if (key.toLowerCase() !== 'sourcesheet' && value !== undefined && value !== null && String(value).trim() !== '') {
+                            const keyTrimmedLower = key.trim().toLowerCase();
+                            const isPrice = priceKeywords.some(p => keyTrimmedLower.startsWith(p));
+                            const displayValue = isPrice ? formatPrice(value) : value;
+                            
+                            detailsHtml += `
+                                <div class="py-2 border-b border-gray-100">
+                                    <strong class="block text-xs font-medium text-gray-500">${key}:</strong>
+                                    <span class="block text-base text-gray-800 break-words">${displayValue}</span>
+                                </div>`;
+                        }
+                    });
+
+                    const card = `
+                        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold mb-4 px-2.5 py-1 rounded-full self-start">
+                                <i class="fas fa-file-alt mr-1"></i> Encontrado em: ${product.sourceSheet || 'N/A'}
+                            </span>
+                            <div class="text-sm space-y-2">${detailsHtml}</div>
+                        </div>`;
+                    resultsContainer.innerHTML += card;
+                });
+            };
+            
+            const searchProducts = () => {
+                const query = searchInput.value.toLowerCase().trim();
+                const allProductsFlat = Object.entries(productDatabase).flatMap(([sheetName, products]) => 
+                    products.map(p => ({ ...p, sourceSheet: sheetName }))
+                );
+                
+                if (!query) {
+                    displayResults([]);
+                    return;
+                }
+
+                const filteredProducts = allProductsFlat.filter(product => 
+                    Object.values(product).some(value => 
+                        String(value).toLowerCase().includes(query)
+                    )
+                );
+                displayResults(filteredProducts);
+            };
+
+            searchInput.addEventListener('input', searchProducts);
+        });
+    </script>
+</body>
+</html>
+
