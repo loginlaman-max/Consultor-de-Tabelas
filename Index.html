@@ -76,9 +76,9 @@
         <!-- Barra de Busca -->
         <div class="bg-white p-6 rounded-lg shadow-md mb-8 max-w-4xl mx-auto">
              <div class="mb-4">
-                <h3 class="text-lg font-semibold text-gray-700">Abas Carregadas na Base de Dados:</h3>
-                <div id="loadedSheets" class="flex flex-wrap gap-2 mt-2">
-                    <!-- Tags das abas carregadas serão inseridas aqui -->
+                <h3 class="text-lg font-semibold text-gray-700">Resumo da Base de Dados:</h3>
+                <div id="databaseSummary" class="mt-2">
+                    <!-- Resumo será inserido aqui -->
                 </div>
             </div>
             <div class="relative">
@@ -103,8 +103,8 @@
         <!-- Estado Inicial -->
         <div id="initialState" class="text-center text-gray-500 mt-12">
             <i class="fas fa-database fa-3x mb-4"></i>
-            <p class="text-xl">Base de dados de exemplo carregada.</p>
-            <p>Comece a buscar ou clique na engrenagem <i class="fas fa-cog"></i> para carregar suas planilhas.</p>
+            <p class="text-xl">Nenhuma planilha carregada.</p>
+            <p>Clique na engrenagem <i class="fas fa-cog"></i> para carregar suas planilhas.</p>
         </div>
     </div>
 
@@ -112,26 +112,41 @@
     <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full relative transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
             <button id="closeModalButton" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4 text-center">Atualizar Base de Dados</h2>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4 text-center">Configurações</h2>
+            
+            <!-- Seção de Gerenciamento -->
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Gerenciar Arquivos Carregados</h3>
+                <div id="fileManagementList" class="space-y-2 max-h-48 overflow-y-auto bg-gray-50 p-3 rounded-lg border">
+                    <!-- Lista de arquivos carregados -->
+                </div>
+                <button id="removeAllButton" class="mt-4 w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:bg-red-300">
+                    <i class="fas fa-trash-alt mr-2"></i> Remover Todos os Arquivos
+                </button>
+            </div>
+            
+            <hr class="my-6">
+
+            <!-- Seção de Upload -->
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Adicionar Novos Arquivos</h3>
+            <div id="fileStagingArea" class="mb-4 p-4 bg-gray-50 rounded-lg max-h-40 overflow-y-auto border">
+                <!-- Arquivos selecionados para upload -->
+            </div>
             <label for="fileInput" class="file-upload-wrapper block">
-                <i class="fas fa-upload fa-2x text-gray-400 mb-2"></i>
-                <p class="text-gray-600">Clique aqui para selecionar a planilha (.csv, .xls, .xlsx)</p>
-                <span id="fileName" class="text-sm text-gray-500 mt-1 block"></span>
+                <i class="fas fa-plus-circle fa-2x text-gray-400 mb-2"></i>
+                <p class="text-gray-600">Clique para adicionar planilhas (.csv, .xls, .xlsx)</p>
             </label>
-            <input type="file" id="fileInput" accept=".csv, .xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+            <input type="file" id="fileInput" accept=".csv, .xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple>
             <button id="loadFileButton" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:bg-gray-400">
-                <i class="fas fa-plus-circle mr-2"></i> Adicionar ou Atualizar Dados
+                <i class="fas fa-cloud-upload-alt mr-2"></i> Carregar Dados dos Arquivos Selecionados
             </button>
             <p id="statusMessage" class="text-center mt-3 text-sm font-semibold"></p>
         </div>
     </div>
 
     <script>
-        let productDatabase = {
-            "Dados de Exemplo": [
-                { "Part Number": "DS-7232HGHI-M2", "Descrição do Produto": "1080p Lite | 32 Canais | H265+", "PV  ": "1746.38", "PP  ": "2349.99", "PSD  ": "2517.84", "PSCF  ": "2895.52" }
-            ]
-        };
+        let fileDatabase = {};
+        let filesToUpload = [];
 
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('searchInput');
@@ -141,8 +156,10 @@
             const fileInput = document.getElementById('fileInput');
             const loadFileButton = document.getElementById('loadFileButton');
             const statusMessage = document.getElementById('statusMessage');
-            const fileNameSpan = document.getElementById('fileName');
-            const loadedSheetsContainer = document.getElementById('loadedSheets');
+            const databaseSummaryContainer = document.getElementById('databaseSummary');
+            const fileStagingArea = document.getElementById('fileStagingArea');
+            const fileManagementList = document.getElementById('fileManagementList');
+            const removeAllButton = document.getElementById('removeAllButton');
             
             const settingsButton = document.getElementById('settingsButton');
             const closeModalButton = document.getElementById('closeModalButton');
@@ -150,6 +167,7 @@
             const modalContent = document.getElementById('modalContent');
 
             const openModal = () => {
+                updateFileManagementUI();
                 settingsModal.classList.remove('hidden');
                 setTimeout(() => {
                   modalContent.classList.remove('scale-95', 'opacity-0');
@@ -171,37 +189,133 @@
                 }
             });
 
+            window.hideCard = function(cardId) {
+                const cardElement = document.getElementById(cardId);
+                if (cardElement) {
+                    cardElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    cardElement.style.opacity = '0';
+                    cardElement.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        cardElement.remove();
+                        if (resultsContainer.children.length === 0 && searchInput.value.trim() !== '') {
+                           noResults.style.display = 'block';
+                        }
+                    }, 300);
+                }
+            }
+            
+            window.removeFile = function(fileName) {
+                delete fileDatabase[fileName];
+                updateDatabaseSummaryUI();
+                updateFileManagementUI();
+                searchProducts();
+            }
 
-            const updateLoadedSheetsUI = () => {
-                loadedSheetsContainer.innerHTML = '';
-                const sheetNames = Object.keys(productDatabase);
-                if (sheetNames.length === 0) {
-                    loadedSheetsContainer.innerHTML = '<p class="text-gray-500">Nenhuma aba carregada.</p>';
+            const removeAllFiles = () => {
+                fileDatabase = {};
+                updateDatabaseSummaryUI();
+                updateFileManagementUI();
+                searchProducts();
+            }
+            removeAllButton.addEventListener('click', removeAllFiles);
+
+            const updateFileManagementUI = () => {
+                fileManagementList.innerHTML = '';
+                const fileNames = Object.keys(fileDatabase);
+                if (fileNames.length === 0) {
+                    fileManagementList.innerHTML = '<p class="text-sm text-gray-500 text-center">Nenhum arquivo na base de dados.</p>';
+                    removeAllButton.disabled = true;
                 } else {
-                    sheetNames.forEach(name => {
-                        const productCount = productDatabase[name] ? productDatabase[name].length : 0;
-                        const tag = `<span class="bg-gray-200 text-gray-800 text-sm font-medium me-2 px-2.5 py-1 rounded">${name} (${productCount})</span>`;
-                        loadedSheetsContainer.innerHTML += tag;
+                    removeAllButton.disabled = false;
+                    const list = document.createElement('ul');
+                    list.className = 'space-y-2';
+                    fileNames.forEach(name => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'text-sm text-gray-800 flex justify-between items-center bg-white p-2 rounded-md border';
+                        listItem.innerHTML = `
+                            <span><i class="fas fa-file-excel text-green-600 mr-2"></i>${name}</span>
+                            <button onclick="removeFile('${name}')" class="text-red-500 hover:text-red-700 px-2" title="Remover Arquivo">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        `;
+                        list.appendChild(listItem);
                     });
+                    fileManagementList.appendChild(list);
+                }
+            }
+
+            const updateDatabaseSummaryUI = () => {
+                const fileNames = Object.keys(fileDatabase);
+                const totalFiles = fileNames.length;
+                const totalProducts = fileNames.reduce((acc, fileName) => {
+                    const sheets = fileDatabase[fileName];
+                    const sheetProductCount = Object.values(sheets).reduce((sheetAcc, products) => sheetAcc + (products ? products.length : 0), 0);
+                    return acc + sheetProductCount;
+                }, 0);
+
+                if (totalFiles === 0) {
+                    databaseSummaryContainer.innerHTML = '<p class="text-gray-500">Nenhuma planilha carregada.</p>';
+                    initialState.style.display = 'block';
+                } else {
+                    initialState.style.display = 'none';
+                    databaseSummaryContainer.innerHTML = `
+                        <p class="text-gray-700">
+                            <span class="font-bold text-blue-600">${totalFiles}</span> arquivo(s) na base de dados, com um total de 
+                            <span class="font-bold text-blue-600">${totalProducts}</span> produtos.
+                        </p>`;
                 }
             };
-            
-            updateLoadedSheetsUI();
-            loadFileButton.disabled = true;
 
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    fileNameSpan.textContent = `Arquivo selecionado: ${file.name}`;
+            const updateFileListView = () => {
+                fileStagingArea.innerHTML = ''; 
+
+                if (filesToUpload.length > 0) {
+                    const fileList = document.createElement('ul');
+                    fileList.className = 'list-disc list-inside text-left space-y-1';
+                    filesToUpload.forEach((file, index) => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'text-sm text-gray-700 flex justify-between items-center';
+                        
+                        const textSpan = document.createElement('span');
+                        textSpan.textContent = file.name;
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'text-red-500 hover:text-red-700 ml-2 px-2';
+                        removeBtn.innerHTML = '<i class="fas fa-times-circle"></i>';
+                        removeBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            filesToUpload.splice(index, 1);
+                            updateFileListView();
+                        };
+                        
+                        listItem.appendChild(textSpan);
+                        listItem.appendChild(removeBtn);
+                        fileList.appendChild(listItem);
+                    });
+                    fileStagingArea.appendChild(fileList);
                     loadFileButton.disabled = false;
                 } else {
-                    fileNameSpan.textContent = '';
+                    fileStagingArea.innerHTML = '<p class="text-sm text-gray-400 text-center">Nenhum arquivo novo selecionado.</p>';
                     loadFileButton.disabled = true;
                 }
+            }
+            
+            updateDatabaseSummaryUI();
+            updateFileListView();
+
+            fileInput.addEventListener('change', (event) => {
+                const newFiles = Array.from(event.target.files);
+                newFiles.forEach(newFile => {
+                    if (!filesToUpload.some(existingFile => existingFile.name === newFile.name && existingFile.size === newFile.size)) {
+                        filesToUpload.push(newFile);
+                    }
+                });
+                event.target.value = ''; 
+                updateFileListView();
             });
             
             const processSheetData = (dataAsArrayOfArrays, sheetName) => {
-                const idKeywords = ['part number', 'partnumber', 'modelo', 'model', 'código', 'cod.', 'item', 'part number'];
+                const idKeywords = ['part number', 'partnumber', 'modelo', 'model', 'código', 'cod.', 'item'];
                 const descKeywords = ['descrição', 'description', 'produto', 'detalha'];
                 const priceKeywords = ['pv', 'pp', 'psd', 'pscf', 'preço'];
 
@@ -231,7 +345,7 @@
                 }
     
                 if (idColumnIndex === -1) {
-                     return { error: `Coluna de identificação (Part Number/Modelo) não encontrada na aba '${sheetName}'.` };
+                     return { error: `Coluna de identificação principal não encontrada na aba '${sheetName}'.` };
                 }
 
                 const mappedData = [];
@@ -258,99 +372,97 @@
                 return { success: true, data: mappedData, sheetName: sheetName };
             };
 
-            const handleFile = (file) => {
-                if (!file) return;
-                statusMessage.textContent = 'Carregando e processando...';
-                statusMessage.className = 'text-center mt-3 text-sm text-blue-600 font-semibold';
-                const fileExtension = file.name.split('.').pop().toLowerCase();
-                const reader = new FileReader();
+            const processSingleFile = (file) => {
+                return new Promise((resolve) => {
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    const reader = new FileReader();
 
-                reader.onerror = () => {
-                    statusMessage.textContent = 'Não foi possível ler o arquivo.';
-                    statusMessage.className = 'text-center mt-3 text-sm text-red-600 font-semibold';
-                };
+                    reader.onerror = () => resolve({ [file.name]: { error: `Não foi possível ler o arquivo.` } });
 
-                if (fileExtension === 'csv') {
-                     reader.onload = (e) => Papa.parse(e.target.result, {
-                        complete: (results) => {
-                            let sheetName = file.name.split('.')[0];
-                            const match = file.name.match(/- (.*?)\.csv/);
-                            if(match && match[1]) sheetName = match[1].trim();
-                            const result = processSheetData(results.data, sheetName);
-                            handleProcessResult([result]);
-                        }
-                     });
-                     reader.readAsText(file, 'UTF-8');
-                } else if (fileExtension === 'xls' || fileExtension === 'xlsx') {
-                    reader.onload = (e) => {
-                        try {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            const results = [];
-                            workbook.SheetNames.forEach(sheetName => {
-                                const worksheet = workbook.Sheets[sheetName];
-                                const aoa = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-                                results.push(processSheetData(aoa, sheetName));
-                            });
-                            handleProcessResult(results);
-                        } catch (err) {
-                            statusMessage.textContent = 'Erro ao processar o arquivo Excel.';
-                            statusMessage.className = 'text-center mt-3 text-sm text-red-600 font-semibold';
-                        }
-                    };
-                    reader.readAsArrayBuffer(file);
-                }
-            };
-
-            const handleProcessResult = (results) => {
-                const successMessages = [];
-                const errorMessages = [];
-                const warningMessages = [];
-                
-                results.forEach(result => {
-                    if (result.error) {
-                        errorMessages.push(result.error);
-                    } else if (result.warning) {
-                        warningMessages.push(result.warning);
-                    } else if (result.success) {
-                        productDatabase[result.sheetName] = result.data;
-                        successMessages.push(`'${result.sheetName}' (${result.data.length})`);
+                    if (fileExtension === 'csv') {
+                        reader.onload = (e) => Papa.parse(e.target.result, {
+                            complete: (results) => {
+                                let sheetName = file.name.split('.')[0];
+                                const match = file.name.match(/- (.*?)\.csv/);
+                                if (match && match[1]) sheetName = match[1].trim();
+                                const result = processSheetData(results.data, sheetName);
+                                resolve({ [file.name]: { [sheetName]: result } });
+                            }
+                        });
+                        reader.readAsText(file, 'UTF-8');
+                    } else if (fileExtension === 'xls' || fileExtension === 'xlsx') {
+                        reader.onload = (e) => {
+                            try {
+                                const data = new Uint8Array(e.target.result);
+                                const workbook = XLSX.read(data, { type: 'array' });
+                                const fileResult = {};
+                                workbook.SheetNames.forEach(sheetName => {
+                                    const worksheet = workbook.Sheets[sheetName];
+                                    const aoa = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                                    fileResult[sheetName] = processSheetData(aoa, sheetName);
+                                });
+                                resolve({ [file.name]: fileResult });
+                            } catch (err) {
+                                resolve({ [file.name]: { error: `Erro ao processar o arquivo Excel.` } });
+                            }
+                        };
+                        reader.readAsArrayBuffer(file);
+                    } else {
+                        resolve({ [file.name]: { error: `Formato de arquivo não suportado.` } });
                     }
                 });
-
-                let finalMessage = '';
-                let messageClass = '';
-
-                if (errorMessages.length > 0) {
-                    finalMessage = `Erros: ${errorMessages.join('; ')}`;
-                    messageClass = 'text-red-600';
-                } else if (successMessages.length > 0) {
-                    const totalProducts = Object.values(productDatabase).flat().length;
-                    finalMessage = `Carregamento concluído! Abas processadas: ${successMessages.join(', ')}. Total na base: ${totalProducts} produtos.`;
-                    messageClass = 'text-green-600';
-                } else {
-                    finalMessage = 'Nenhum dado novo foi carregado. Verifique o formato do arquivo.';
-                    messageClass = 'text-orange-600';
-                }
-                
-                if (warningMessages.length > 0){
-                    finalMessage += ` Avisos: ${warningMessages.join('; ')}`;
-                    if(!errorMessages.length) messageClass = 'text-orange-600';
-                }
-
-                statusMessage.textContent = finalMessage;
-                statusMessage.className = `text-center mt-3 text-sm font-semibold ${messageClass}`;
-
-                updateLoadedSheetsUI();
-                searchInput.value = '';
-                displayResults([]);
-                fileInput.value = '';
-                fileNameSpan.textContent = '';
-                loadFileButton.disabled = true;
-                setTimeout(closeModal, 2000);
             };
 
-            loadFileButton.addEventListener('click', () => handleFile(fileInput.files[0]));
+            const handleFiles = (files) => {
+                if (!files || files.length === 0) return;
+                statusMessage.textContent = `Carregando e processando ${files.length} arquivo(s)...`;
+                statusMessage.className = 'text-center mt-3 text-sm text-blue-600 font-semibold';
+
+                const filePromises = Array.from(files).map(processSingleFile);
+
+                Promise.all(filePromises).then(results => {
+                    handleProcessResult(results);
+                });
+            };
+            
+            loadFileButton.addEventListener('click', () => handleFiles(filesToUpload));
+
+            const handleProcessResult = (results) => {
+                let successCount = 0;
+                results.forEach(fileResult => {
+                    const fileName = Object.keys(fileResult)[0];
+                    const sheets = fileResult[fileName];
+                    
+                    let fileHasSuccess = false;
+                    fileDatabase[fileName] = {};
+
+                    Object.keys(sheets).forEach(sheetName => {
+                        const result = sheets[sheetName];
+                        if(result.success) {
+                            fileDatabase[fileName][sheetName] = result.data;
+                            fileHasSuccess = true;
+                        } else {
+                            // Optionally handle errors/warnings per sheet
+                        }
+                    });
+                    if(fileHasSuccess) successCount++;
+                });
+
+                if (successCount > 0) {
+                    statusMessage.textContent = `Carregamento concluído! ${successCount} arquivo(s) processado(s) com sucesso.`;
+                    statusMessage.className = 'text-center mt-3 text-sm text-green-600 font-semibold';
+                } else {
+                     statusMessage.textContent = 'Nenhum arquivo pôde ser processado. Verifique o formato.';
+                     statusMessage.className = 'text-center mt-3 text-sm text-red-600 font-semibold';
+                }
+                
+                filesToUpload = [];
+                updateFileListView();
+                updateDatabaseSummaryUI();
+                searchInput.value = '';
+                displayResults([]);
+                setTimeout(closeModal, 2000);
+            };
 
             const formatPrice = (value) => {
                 let number;
@@ -374,17 +486,17 @@
             
             const displayResults = (products) => {
                 resultsContainer.innerHTML = ''; 
-                initialState.style.display = searchInput.value.trim() === '' ? 'block' : 'none';
+                if (Object.keys(fileDatabase).length > 0) initialState.style.display = 'none';
                 noResults.style.display = (searchInput.value.trim() !== '' && products.length === 0) ? 'block' : 'none';
 
                 const priceKeywords = ['pv', 'pp', 'psd', 'pscf'];
 
-                products.forEach(product => {
+                products.forEach((product, index) => {
                     let detailsHtml = '';
                     const productEntries = Object.entries(product);
                     
                     productEntries.forEach(([key, value]) => {
-                        if (key.toLowerCase() !== 'sourcesheet' && value !== undefined && value !== null && String(value).trim() !== '') {
+                        if (!['sourcesheet', 'sourcefile'].includes(key.toLowerCase()) && value !== undefined && value !== null && String(value).trim() !== '') {
                             const keyTrimmedLower = key.trim().toLowerCase();
                             const isPrice = priceKeywords.some(p => keyTrimmedLower.startsWith(p));
                             const displayValue = isPrice ? formatPrice(value) : value;
@@ -397,10 +509,14 @@
                         }
                     });
 
+                    const cardId = `product-card-${index}`;
                     const card = `
-                        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <div id="${cardId}" class="relative bg-white p-6 rounded-lg shadow-md border border-gray-200 flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <button onclick="window.hideCard('${cardId}')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors z-10" title="Ocultar este resultado">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
                             <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold mb-4 px-2.5 py-1 rounded-full self-start">
-                                <i class="fas fa-file-alt mr-1"></i> Encontrado em: ${product.sourceSheet || 'N/A'}
+                                <i class="fas fa-file-alt mr-1"></i> ${product.sourceFile} > ${product.sourceSheet || 'N/A'}
                             </span>
                             <div class="text-sm space-y-2">${detailsHtml}</div>
                         </div>`;
@@ -412,8 +528,10 @@
                 try {
                     const query = searchInput.value.toLowerCase().trim();
                     
-                    const allProductsFlat = Object.entries(productDatabase).flatMap(([sheetName, products]) => 
-                        Array.isArray(products) ? products.map(p => ({ ...p, sourceSheet: sheetName })) : []
+                    const allProductsFlat = Object.entries(fileDatabase).flatMap(([fileName, sheets]) => 
+                        Object.entries(sheets).flatMap(([sheetName, products]) => 
+                            Array.isArray(products) ? products.map(p => ({ ...p, sourceSheet: sheetName, sourceFile: fileName })) : []
+                        )
                     );
                     
                     if (!query) {
