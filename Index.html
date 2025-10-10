@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de Produtos</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,96 +15,89 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        .dark ::-webkit-scrollbar-track { background: #2d3748; }
+        ::-webkit-scrollbar-thumb { background: #a0aec0; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); }
+        #searchInput { padding-left: 48px; }
+        .file-upload-wrapper { transition: background-color 0.2s; }
+        #fileInput { display: none; }
+        #settingsModal { transition: opacity 0.3s ease; }
+        .spinner {
+            border: 2px solid #f3f3f3; 
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
         }
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #a0aec0;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #718096;
-        }
-        .search-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9CA3AF;
-        }
-        #searchInput {
-            padding-left: 48px;
-        }
-        .file-upload-wrapper {
-            border: 2px dashed #D1D5DB;
-            border-radius: 0.5rem;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .file-upload-wrapper:hover {
-            background-color: #F9FAFB;
-        }
-        #fileInput {
-            display: none;
-        }
-        #settingsModal {
-            transition: opacity 0.3s ease;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 dark:bg-slate-900 transition-colors duration-300">
 
-    <!-- Cabeçalho Fixo -->
-    <header class="bg-white shadow-md sticky top-0 z-20">
+    <header class="bg-white dark:bg-slate-800 shadow-md sticky top-0 z-20 transition-colors duration-300">
         <div class="container mx-auto p-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-gray-800">Buscador de Produtos</h1>
-            <button id="settingsButton" class="text-gray-600 hover:text-blue-600 transition-colors text-2xl">
-                <i class="fas fa-cog"></i>
-            </button>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Buscador de Produtos</h1>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
+                    <i id="theme-toggle-dark-icon" class="fas fa-moon hidden w-5 h-5"></i>
+                    <i id="theme-toggle-light-icon" class="fas fa-sun hidden w-5 h-5"></i>
+                </button>
+                <button id="settingsButton" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors text-2xl">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- Conteúdo Principal -->
     <div class="container mx-auto p-4 md:p-8">
         
-        <!-- Barra de Busca -->
-        <div class="bg-white p-6 rounded-lg shadow-md mb-8 max-w-4xl mx-auto">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md mb-8 max-w-7xl mx-auto transition-colors duration-300">
              <div class="mb-4">
-                <h3 class="text-lg font-semibold text-gray-700">Resumo da Base de Dados:</h3>
-                <div id="databaseSummary" class="mt-2">
-                    <!-- Resumo será inserido aqui -->
-                </div>
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Resumo da Base de Dados:</h3>
+                <div id="databaseSummary" class="mt-2"></div>
             </div>
             <div class="relative">
-                <i class="fas fa-search search-icon"></i>
+                <i class="fas fa-search search-icon text-gray-400"></i>
                 <input type="text" id="searchInput" placeholder="Buscar em todas as abas por qualquer informação do produto..."
-                       class="w-full p-4 border border-gray-300 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200">
+                       class="w-full p-4 border border-gray-300 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-gray-400">
             </div>
         </div>
 
-        <!-- Resultados da Busca -->
-        <main id="resultsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Os cards de produtos serão inseridos aqui via JavaScript -->
-        </main>
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <main id="resultsContainer" class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6"></main>
 
-        <!-- Mensagem de Nenhum Resultado -->
-        <div id="noResults" class="hidden text-center text-gray-500 mt-12">
+            <aside id="aiPanel" class="lg:col-span-1 lg:sticky top-28 h-fit hidden">
+                 <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 flex items-center"><i class="fas fa-robot text-blue-500 mr-3"></i>Assistente de Vendas IA</h2>
+                    
+                    <div id="aiContent">
+                        <!-- Conteúdo da IA será inserido aqui -->
+                    </div>
+                    
+                    <div id="aiPlaceholder" class="text-center text-gray-500 dark:text-gray-400 py-10">
+                        <i class="fas fa-mouse-pointer fa-2x mb-3"></i>
+                        <p>Clique em um produto para gerar o título e a descrição de venda.</p>
+                    </div>
+
+                 </div>
+            </aside>
+        </div>
+
+        <div id="noResults" class="hidden text-center text-gray-500 dark:text-gray-400 mt-12">
             <i class="fas fa-box-open fa-3x mb-4"></i>
             <p class="text-xl">Nenhum produto encontrado.</p>
             <p>Tente ajustar seus termos de busca ou carregue uma nova planilha.</p>
         </div>
         
-        <!-- Estado Inicial -->
-        <div id="initialState" class="text-center text-gray-500 mt-12">
+        <div id="initialState" class="text-center text-gray-500 dark:text-gray-400 mt-12">
             <i class="fas fa-database fa-3x mb-4"></i>
             <p class="text-xl">Nenhuma planilha carregada.</p>
             <p>Clique na engrenagem <i class="fas fa-cog"></i> para carregar suas planilhas.</p>
@@ -110,86 +106,101 @@
 
     <!-- Modal de Configurações/Upload -->
     <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full relative transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
-            <button id="closeModalButton" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4 text-center">Configurações</h2>
+        <div id="modalContent" class="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-xl max-w-2xl w-full relative transform transition-all duration-300 scale-95 opacity-0">
+            <button id="closeModalButton" class="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white text-3xl">&times;</button>
+            <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-6 text-center">Configurações</h2>
             
-            <!-- Seção de Gerenciamento -->
             <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-700 mb-2">Gerenciar Arquivos Carregados</h3>
-                <div id="fileManagementList" class="space-y-2 max-h-48 overflow-y-auto bg-gray-50 p-3 rounded-lg border">
-                    <!-- Lista de arquivos carregados -->
-                </div>
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Gerenciar Arquivos Carregados</h3>
+                <div id="fileManagementList" class="space-y-2 max-h-48 overflow-y-auto bg-gray-50 dark:bg-slate-900 p-3 rounded-lg border dark:border-slate-700"></div>
                 <button id="removeAllButton" class="mt-4 w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:bg-red-300">
                     <i class="fas fa-trash-alt mr-2"></i> Remover Todos os Arquivos
                 </button>
             </div>
             
-            <hr class="my-6">
+            <hr class="my-6 border-gray-200 dark:border-gray-700">
 
-            <!-- Seção de Upload -->
-            <h3 class="text-lg font-semibold text-gray-700 mb-2">Adicionar Novos Arquivos</h3>
-            <div id="fileStagingArea" class="mb-4 p-4 bg-gray-50 rounded-lg max-h-40 overflow-y-auto border">
-                <!-- Arquivos selecionados para upload -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Adicionar Novos Arquivos</h3>
+                <div id="fileStagingArea" class="mb-4 p-4 bg-gray-50 dark:bg-slate-900 rounded-lg max-h-40 overflow-y-auto border dark:border-slate-700"></div>
+                <label for="fileInput" class="file-upload-wrapper border-gray-300 dark:border-gray-600 dark:hover:bg-slate-700">
+                    <i class="fas fa-plus-circle fa-2x text-gray-400 mb-2"></i>
+                    <p class="text-gray-600 dark:text-gray-300">Clique para adicionar planilhas</p>
+                </label>
+                <input type="file" id="fileInput" accept=".csv, .xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple>
+                <button id="loadFileButton" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:bg-gray-400">
+                    <i class="fas fa-cloud-upload-alt mr-2"></i> Carregar Dados
+                </button>
+                <p id="statusMessage" class="text-center mt-3 text-sm font-semibold"></p>
             </div>
-            <label for="fileInput" class="file-upload-wrapper block">
-                <i class="fas fa-plus-circle fa-2x text-gray-400 mb-2"></i>
-                <p class="text-gray-600">Clique para adicionar planilhas (.csv, .xls, .xlsx)</p>
-            </label>
-            <input type="file" id="fileInput" accept=".csv, .xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple>
-            <button id="loadFileButton" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:bg-gray-400">
-                <i class="fas fa-cloud-upload-alt mr-2"></i> Carregar Dados dos Arquivos Selecionados
-            </button>
-            <p id="statusMessage" class="text-center mt-3 text-sm font-semibold"></p>
         </div>
     </div>
 
     <script>
         let fileDatabase = {};
         let filesToUpload = [];
+        let currentSearchResults = [];
 
         document.addEventListener('DOMContentLoaded', () => {
-            const searchInput = document.getElementById('searchInput');
-            const resultsContainer = document.getElementById('resultsContainer');
-            const noResults = document.getElementById('noResults');
-            const initialState = document.getElementById('initialState');
-            const fileInput = document.getElementById('fileInput');
-            const loadFileButton = document.getElementById('loadFileButton');
-            const statusMessage = document.getElementById('statusMessage');
-            const databaseSummaryContainer = document.getElementById('databaseSummary');
-            const fileStagingArea = document.getElementById('fileStagingArea');
-            const fileManagementList = document.getElementById('fileManagementList');
-            const removeAllButton = document.getElementById('removeAllButton');
-            
-            const settingsButton = document.getElementById('settingsButton');
-            const closeModalButton = document.getElementById('closeModalButton');
-            const settingsModal = document.getElementById('settingsModal');
-            const modalContent = document.getElementById('modalContent');
+            const elements = {
+                themeToggleBtn: document.getElementById('theme-toggle'),
+                themeToggleDarkIcon: document.getElementById('theme-toggle-dark-icon'),
+                themeToggleLightIcon: document.getElementById('theme-toggle-light-icon'),
+                searchInput: document.getElementById('searchInput'),
+                resultsContainer: document.getElementById('resultsContainer'),
+                noResults: document.getElementById('noResults'),
+                initialState: document.getElementById('initialState'),
+                fileInput: document.getElementById('fileInput'),
+                loadFileButton: document.getElementById('loadFileButton'),
+                statusMessage: document.getElementById('statusMessage'),
+                databaseSummaryContainer: document.getElementById('databaseSummary'),
+                fileStagingArea: document.getElementById('fileStagingArea'),
+                fileManagementList: document.getElementById('fileManagementList'),
+                removeAllButton: document.getElementById('removeAllButton'),
+                settingsButton: document.getElementById('settingsButton'),
+                closeModalButton: document.getElementById('closeModalButton'),
+                settingsModal: document.getElementById('settingsModal'),
+                modalContent: document.getElementById('modalContent'),
+                aiPanel: document.getElementById('aiPanel'),
+                aiContent: document.getElementById('aiContent'),
+                aiPlaceholder: document.getElementById('aiPlaceholder'),
+            };
+
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    elements.themeToggleLightIcon.classList.remove('hidden');
+                    elements.themeToggleDarkIcon.classList.add('hidden');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    elements.themeToggleDarkIcon.classList.remove('hidden');
+                    elements.themeToggleLightIcon.classList.add('hidden');
+                }
+            }
+
+            const savedTheme = localStorage.getItem('color-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(savedTheme);
+
+            elements.themeToggleBtn.addEventListener('click', () => {
+                const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+                localStorage.setItem('color-theme', newTheme);
+                applyTheme(newTheme);
+            });
 
             const openModal = () => {
                 updateFileManagementUI();
-                settingsModal.classList.remove('hidden');
-                setTimeout(() => {
-                  modalContent.classList.remove('scale-95', 'opacity-0');
-                }, 10);
+                elements.settingsModal.classList.remove('hidden');
+                setTimeout(() => elements.modalContent.classList.remove('scale-95', 'opacity-0'), 10);
             };
-
             const closeModal = () => {
-                modalContent.classList.add('scale-95', 'opacity-0');
-                setTimeout(() => {
-                    settingsModal.classList.add('hidden');
-                }, 300);
+                elements.modalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => elements.settingsModal.classList.add('hidden'), 300);
             };
+            elements.settingsButton.addEventListener('click', openModal);
+            elements.closeModalButton.addEventListener('click', closeModal);
+            elements.settingsModal.addEventListener('click', (e) => e.target === elements.settingsModal && closeModal());
 
-            settingsButton.addEventListener('click', openModal);
-            closeModalButton.addEventListener('click', closeModal);
-            settingsModal.addEventListener('click', (e) => {
-                if (e.target === settingsModal) {
-                    closeModal();
-                }
-            });
-
-            window.hideCard = function(cardId) {
+            const hideCard = (cardId) => {
                 const cardElement = document.getElementById(cardId);
                 if (cardElement) {
                     cardElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -197,33 +208,34 @@
                     cardElement.style.transform = 'scale(0.95)';
                     setTimeout(() => {
                         cardElement.remove();
-                        if (resultsContainer.children.length === 0 && searchInput.value.trim() !== '') {
-                           noResults.style.display = 'block';
+                        if (elements.resultsContainer.children.length === 0 && elements.searchInput.value.trim() !== '') {
+                           elements.noResults.style.display = 'block';
+                           elements.aiPanel.classList.add('hidden');
                         }
                     }, 300);
                 }
-            }
+            };
             
-            window.removeFile = function(fileName) {
+            const removeFile = (fileName) => {
                 delete fileDatabase[fileName];
                 updateDatabaseSummaryUI();
                 updateFileManagementUI();
                 searchProducts();
-            }
+            };
 
-            const removeAllFiles = () => {
+            elements.removeAllButton.addEventListener('click', () => {
                 fileDatabase = {};
                 updateDatabaseSummaryUI();
                 updateFileManagementUI();
                 searchProducts();
-            }
-            removeAllButton.addEventListener('click', removeAllFiles);
+            });
 
             const updateFileManagementUI = () => {
+                const { fileManagementList, removeAllButton } = elements;
                 fileManagementList.innerHTML = '';
                 const fileNames = Object.keys(fileDatabase);
                 if (fileNames.length === 0) {
-                    fileManagementList.innerHTML = '<p class="text-sm text-gray-500 text-center">Nenhum arquivo na base de dados.</p>';
+                    fileManagementList.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 text-center">Nenhum arquivo na base de dados.</p>';
                     removeAllButton.disabled = true;
                 } else {
                     removeAllButton.disabled = false;
@@ -231,54 +243,59 @@
                     list.className = 'space-y-2';
                     fileNames.forEach(name => {
                         const listItem = document.createElement('li');
-                        listItem.className = 'text-sm text-gray-800 flex justify-between items-center bg-white p-2 rounded-md border';
-                        listItem.innerHTML = `
-                            <span><i class="fas fa-file-excel text-green-600 mr-2"></i>${name}</span>
-                            <button onclick="removeFile('${name}')" class="text-red-500 hover:text-red-700 px-2" title="Remover Arquivo">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        `;
+                        listItem.className = 'text-sm text-gray-800 dark:text-gray-200 flex justify-between items-center bg-white dark:bg-slate-700 p-2 rounded-md border dark:border-slate-600';
+                        const span = document.createElement('span');
+                        span.className = 'truncate pr-2';
+                        span.innerHTML = `<i class="fas fa-file-excel text-green-600 mr-2"></i>${name}`;
+                        
+                        const button = document.createElement('button');
+                        button.className = 'text-red-500 hover:text-red-700 px-2 flex-shrink-0';
+                        button.title = 'Remover Arquivo';
+                        button.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                        button.onclick = () => removeFile(name);
+
+                        listItem.appendChild(span);
+                        listItem.appendChild(button);
                         list.appendChild(listItem);
                     });
                     fileManagementList.appendChild(list);
                 }
-            }
+            };
 
             const updateDatabaseSummaryUI = () => {
                 const fileNames = Object.keys(fileDatabase);
                 const totalFiles = fileNames.length;
                 const totalProducts = fileNames.reduce((acc, fileName) => {
                     const sheets = fileDatabase[fileName];
-                    const sheetProductCount = Object.values(sheets).reduce((sheetAcc, products) => sheetAcc + (products ? products.length : 0), 0);
-                    return acc + sheetProductCount;
+                    return acc + Object.values(sheets).reduce((sheetAcc, products) => sheetAcc + (products ? products.length : 0), 0);
                 }, 0);
 
                 if (totalFiles === 0) {
-                    databaseSummaryContainer.innerHTML = '<p class="text-gray-500">Nenhuma planilha carregada.</p>';
-                    initialState.style.display = 'block';
+                    elements.databaseSummaryContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Nenhuma planilha carregada.</p>';
+                    elements.initialState.style.display = 'block';
                 } else {
-                    initialState.style.display = 'none';
-                    databaseSummaryContainer.innerHTML = `
-                        <p class="text-gray-700">
-                            <span class="font-bold text-blue-600">${totalFiles}</span> arquivo(s) na base de dados, com um total de 
-                            <span class="font-bold text-blue-600">${totalProducts}</span> produtos.
+                    elements.initialState.style.display = 'none';
+                    elements.databaseSummaryContainer.innerHTML = `
+                        <p class="text-gray-700 dark:text-gray-300">
+                            <span class="font-bold text-blue-600 dark:text-blue-400">${totalFiles}</span> arquivo(s) na base de dados, com um total de 
+                            <span class="font-bold text-blue-600 dark:text-blue-400">${totalProducts}</span> produtos.
                         </p>`;
                 }
             };
 
             const updateFileListView = () => {
+                const { fileStagingArea, loadFileButton } = elements;
                 fileStagingArea.innerHTML = ''; 
-
                 if (filesToUpload.length > 0) {
                     const fileList = document.createElement('ul');
                     fileList.className = 'list-disc list-inside text-left space-y-1';
                     filesToUpload.forEach((file, index) => {
                         const listItem = document.createElement('li');
-                        listItem.className = 'text-sm text-gray-700 flex justify-between items-center';
+                        listItem.className = 'text-sm text-gray-700 dark:text-gray-300 flex justify-between items-center';
                         
                         const textSpan = document.createElement('span');
                         textSpan.textContent = file.name;
-                        
+
                         const removeBtn = document.createElement('button');
                         removeBtn.className = 'text-red-500 hover:text-red-700 ml-2 px-2';
                         removeBtn.innerHTML = '<i class="fas fa-times-circle"></i>';
@@ -298,12 +315,9 @@
                     fileStagingArea.innerHTML = '<p class="text-sm text-gray-400 text-center">Nenhum arquivo novo selecionado.</p>';
                     loadFileButton.disabled = true;
                 }
-            }
+            };
             
-            updateDatabaseSummaryUI();
-            updateFileListView();
-
-            fileInput.addEventListener('change', (event) => {
+            elements.fileInput.addEventListener('change', (event) => {
                 const newFiles = Array.from(event.target.files);
                 newFiles.forEach(newFile => {
                     if (!filesToUpload.some(existingFile => existingFile.name === newFile.name && existingFile.size === newFile.size)) {
@@ -316,19 +330,13 @@
             
             const processSheetData = (dataAsArrayOfArrays, sheetName) => {
                 const idKeywords = ['part number', 'partnumber', 'modelo', 'model', 'código', 'cod.', 'item'];
-                const descKeywords = ['descrição', 'description', 'produto', 'detalha'];
-                const priceKeywords = ['pv', 'pp', 'psd', 'pscf', 'preço'];
 
                 let headerRowIndex = -1;
                 for (let i = 0; i < Math.min(dataAsArrayOfArrays.length, 20); i++) {
                     if (!Array.isArray(dataAsArrayOfArrays[i])) continue;
                     const row = dataAsArrayOfArrays[i].map(h => String(h || '').toLowerCase().trim());
-                    
                     const hasId = row.some(cell => idKeywords.some(kw => cell.includes(kw)));
-                    const hasDesc = row.some(cell => descKeywords.some(kw => cell.includes(kw)));
-                    const hasPrice = row.some(cell => priceKeywords.some(kw => cell.includes(kw)));
-                    
-                    if (hasId && (hasDesc || hasPrice)) {
+                    if (hasId && row.filter(c => c).length > 1) { // Header has ID and at least one other column
                         headerRowIndex = i;
                         break;
                     }
@@ -337,37 +345,38 @@
                 if (headerRowIndex === -1) return { error: `Cabeçalho não identificado na aba '${sheetName}'.` };
                 
                 const originalHeaders = dataAsArrayOfArrays[headerRowIndex];
-
-                let idColumnIndex = -1;
-                for(const keyword of idKeywords){
-                    idColumnIndex = originalHeaders.findIndex(h => String(h || '').toLowerCase().trim().includes(keyword));
-                    if(idColumnIndex !== -1) break;
-                }
+                let idColumnIndex = originalHeaders.findIndex(h => idKeywords.some(kw => String(h || '').toLowerCase().trim().includes(kw)));
     
-                if (idColumnIndex === -1) {
-                     return { error: `Coluna de identificação principal não encontrada na aba '${sheetName}'.` };
-                }
+                if (idColumnIndex === -1) return { error: `Coluna de ID principal não encontrada na aba '${sheetName}'.` };
 
                 const mappedData = [];
+                let sharedData = {};
+
                 for (let i = headerRowIndex + 1; i < dataAsArrayOfArrays.length; i++) {
                     const rowData = dataAsArrayOfArrays[i];
-                    if (!Array.isArray(rowData) || rowData[idColumnIndex] === undefined || rowData[idColumnIndex] === null || String(rowData[idColumnIndex]).trim() === '') {
-                        continue; 
+                    if (!Array.isArray(rowData) || rowData.every(cell => cell === null || String(cell).trim() === '')) {
+                        sharedData = {}; continue;
                     }
-                    const newRow = {};
-                    let hasData = false;
+                    const currentRow = {};
                     originalHeaders.forEach((header, index) => {
-                        const headerName = String(header || `Coluna ${index + 1}`).trim();
+                        const headerName = String(header || '').trim();
                         const cellValue = rowData[index];
-                        if (headerName !== '' && cellValue !== undefined && cellValue !== null && String(cellValue).trim() !== '') {
-                            newRow[headerName] = cellValue;
-                            hasData = true;
+                         if (headerName !== '' && cellValue !== undefined && cellValue !== null && String(cellValue).trim() !== '') {
+                            currentRow[headerName] = cellValue;
                         }
                     });
-                    if (hasData) mappedData.push(newRow);
+
+                    const hasIdInRow = rowData[idColumnIndex] !== undefined && String(rowData[idColumnIndex]).trim() !== '';
+
+                    if (!hasIdInRow) {
+                        sharedData = { ...sharedData, ...currentRow };
+                    } else {
+                        const newProduct = { ...sharedData, ...currentRow };
+                        mappedData.push(newProduct);
+                    }
                 }
                 
-                if (mappedData.length === 0) return { warning: `Nenhum produto válido encontrado na aba '${sheetName}'.` };
+                if (mappedData.length === 0) return { warning: `Nenhum produto válido encontrado em '${sheetName}'.` };
                 
                 return { success: true, data: mappedData, sheetName: sheetName };
             };
@@ -376,32 +385,32 @@
                 return new Promise((resolve) => {
                     const fileExtension = file.name.split('.').pop().toLowerCase();
                     const reader = new FileReader();
-
                     reader.onerror = () => resolve({ [file.name]: { error: `Não foi possível ler o arquivo.` } });
+                    
+                    const processAndResolve = (workbook) => {
+                        const fileResult = {};
+                        workbook.SheetNames.forEach(sheetName => {
+                            const worksheet = workbook.Sheets[sheetName];
+                            const aoa = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                            fileResult[sheetName] = processSheetData(aoa, sheetName);
+                        });
+                        resolve({ [file.name]: fileResult });
+                    };
 
                     if (fileExtension === 'csv') {
-                        reader.onload = (e) => Papa.parse(e.target.result, {
-                            complete: (results) => {
-                                let sheetName = file.name.split('.')[0];
-                                const match = file.name.match(/- (.*?)\.csv/);
-                                if (match && match[1]) sheetName = match[1].trim();
-                                const result = processSheetData(results.data, sheetName);
-                                resolve({ [file.name]: { [sheetName]: result } });
-                            }
-                        });
+                        reader.onload = (e) => {
+                            const csvData = Papa.parse(e.target.result).data;
+                            let sheetName = file.name.split('.')[0].replace(/-\s.*$/, '').trim();
+                            const result = processSheetData(csvData, sheetName);
+                            resolve({ [file.name]: { [sheetName]: result } });
+                        };
                         reader.readAsText(file, 'UTF-8');
-                    } else if (fileExtension === 'xls' || fileExtension === 'xlsx') {
+                    } else if (['xls', 'xlsx'].includes(fileExtension)) {
                         reader.onload = (e) => {
                             try {
                                 const data = new Uint8Array(e.target.result);
                                 const workbook = XLSX.read(data, { type: 'array' });
-                                const fileResult = {};
-                                workbook.SheetNames.forEach(sheetName => {
-                                    const worksheet = workbook.Sheets[sheetName];
-                                    const aoa = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-                                    fileResult[sheetName] = processSheetData(aoa, sheetName);
-                                });
-                                resolve({ [file.name]: fileResult });
+                                processAndResolve(workbook);
                             } catch (err) {
                                 resolve({ [file.name]: { error: `Erro ao processar o arquivo Excel.` } });
                             }
@@ -417,12 +426,7 @@
                 if (!files || files.length === 0) return;
                 statusMessage.textContent = `Carregando e processando ${files.length} arquivo(s)...`;
                 statusMessage.className = 'text-center mt-3 text-sm text-blue-600 font-semibold';
-
-                const filePromises = Array.from(files).map(processSingleFile);
-
-                Promise.all(filePromises).then(results => {
-                    handleProcessResult(results);
-                });
+                Promise.all(Array.from(files).map(processSingleFile)).then(handleProcessResult);
             };
             
             loadFileButton.addEventListener('click', () => handleFiles(filesToUpload));
@@ -432,29 +436,22 @@
                 results.forEach(fileResult => {
                     const fileName = Object.keys(fileResult)[0];
                     const sheets = fileResult[fileName];
-                    
                     let fileHasSuccess = false;
                     fileDatabase[fileName] = {};
-
                     Object.keys(sheets).forEach(sheetName => {
                         const result = sheets[sheetName];
                         if(result.success) {
                             fileDatabase[fileName][sheetName] = result.data;
                             fileHasSuccess = true;
-                        } else {
-                            // Optionally handle errors/warnings per sheet
                         }
                     });
                     if(fileHasSuccess) successCount++;
                 });
 
-                if (successCount > 0) {
-                    statusMessage.textContent = `Carregamento concluído! ${successCount} arquivo(s) processado(s) com sucesso.`;
-                    statusMessage.className = 'text-center mt-3 text-sm text-green-600 font-semibold';
-                } else {
-                     statusMessage.textContent = 'Nenhum arquivo pôde ser processado. Verifique o formato.';
-                     statusMessage.className = 'text-center mt-3 text-sm text-red-600 font-semibold';
-                }
+                statusMessage.textContent = successCount > 0 
+                    ? `Carregamento concluído! ${successCount} arquivo(s) processado(s) com sucesso.`
+                    : 'Nenhum arquivo pôde ser processado. Verifique o formato.';
+                statusMessage.className = `text-center mt-3 text-sm font-semibold ${successCount > 0 ? 'text-green-600' : 'text-red-600'}`;
                 
                 filesToUpload = [];
                 updateFileListView();
@@ -470,21 +467,13 @@
                     number = value;
                 } else {
                     const s = String(value).trim().replace("R$", "");
-                    if (s.includes(',')) {
-                        number = parseFloat(s.replace(/\./g, '').replace(',', '.'));
-                    } else {
-                        number = parseFloat(s);
-                    }
+                    number = s.includes(',') ? parseFloat(s.replace(/\./g, '').replace(',', '.')) : parseFloat(s);
                 }
-
-                if (isNaN(number)) {
-                    return value;
-                }
-                
-                return number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return isNaN(number) ? value : number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             };
             
             const displayResults = (products) => {
+                const { resultsContainer, initialState, noResults, aiPanel } = elements;
                 resultsContainer.innerHTML = ''; 
                 if (Object.keys(fileDatabase).length > 0) initialState.style.display = 'none';
                 noResults.style.display = (searchInput.value.trim() !== '' && products.length === 0) ? 'block' : 'none';
@@ -493,38 +482,47 @@
 
                 products.forEach((product, index) => {
                     let detailsHtml = '';
-                    const productEntries = Object.entries(product);
-                    
-                    productEntries.forEach(([key, value]) => {
+                    Object.entries(product).forEach(([key, value]) => {
                         if (!['sourcesheet', 'sourcefile'].includes(key.toLowerCase()) && value !== undefined && value !== null && String(value).trim() !== '') {
                             const keyTrimmedLower = key.trim().toLowerCase();
                             const isPrice = priceKeywords.some(p => keyTrimmedLower.startsWith(p));
                             const displayValue = isPrice ? formatPrice(value) : value;
                             
                             detailsHtml += `
-                                <div class="py-2 border-b border-gray-100">
-                                    <strong class="block text-xs font-medium text-gray-500">${key}:</strong>
-                                    <span class="block text-base text-gray-800 break-words">${displayValue}</span>
+                                <div class="py-2 border-b border-gray-100 dark:border-slate-700">
+                                    <strong class="block text-xs font-medium text-gray-500 dark:text-gray-400">${key}:</strong>
+                                    <span class="block text-base text-gray-800 dark:text-gray-100 break-words">${displayValue}</span>
                                 </div>`;
                         }
                     });
 
                     const cardId = `product-card-${index}`;
-                    const card = `
-                        <div id="${cardId}" class="relative bg-white p-6 rounded-lg shadow-md border border-gray-200 flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <button onclick="window.hideCard('${cardId}')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors z-10" title="Ocultar este resultado">
-                                <i class="fas fa-times-circle"></i>
-                            </button>
-                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold mb-4 px-2.5 py-1 rounded-full self-start">
-                                <i class="fas fa-file-alt mr-1"></i> ${product.sourceFile} > ${product.sourceSheet || 'N/A'}
-                            </span>
-                            <div class="text-sm space-y-2">${detailsHtml}</div>
-                        </div>`;
-                    resultsContainer.innerHTML += card;
+                    const cardDiv = document.createElement('div');
+                    cardDiv.id = cardId;
+                    cardDiv.className = "relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer";
+
+                    cardDiv.innerHTML = `
+                        <button class="hide-card-btn absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors z-10" title="Ocultar este resultado">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                        <span class="inline-block bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-semibold mb-4 px-2.5 py-1 rounded-full self-start">
+                            <i class="fas fa-file-alt mr-1"></i> ${product.sourceFile} > ${product.sourceSheet || 'N/A'}
+                        </span>
+                        <div class="text-sm space-y-2">${detailsHtml}</div>
+                    `;
+
+                    cardDiv.addEventListener('click', () => showAiPanel(index));
+                    cardDiv.querySelector('.hide-card-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        hideCard(cardId);
+                    });
+
+                    resultsContainer.appendChild(cardDiv);
                 });
             };
             
             const searchProducts = () => {
+                const { searchInput, aiPanel, resultsContainer, initialState, noResults } = elements;
                 try {
                     const query = searchInput.value.toLowerCase().trim();
                     
@@ -535,30 +533,117 @@
                     );
                     
                     if (!query) {
+                        currentSearchResults = [];
                         displayResults([]);
+                        aiPanel.classList.add('hidden');
                         return;
                     }
 
-                    const filteredProducts = allProductsFlat.filter(product => 
+                    currentSearchResults = allProductsFlat.filter(product => 
                         product && typeof product === 'object' && Object.values(product).some(value => 
                             String(value).toLowerCase().includes(query)
                         )
                     );
-                    displayResults(filteredProducts);
+                    displayResults(currentSearchResults);
+                    aiPanel.classList.toggle('hidden', currentSearchResults.length === 0);
+
                 } catch (error) {
                     console.error("Erro durante a busca:", error);
                      resultsContainer.innerHTML = '';
                     initialState.style.display = 'none';
-                    noResults.innerHTML = `
-                        <i class="fas fa-exclamation-triangle fa-3x mb-4 text-red-500"></i>
-                        <p class="text-xl">Ocorreu um erro na busca.</p>
-                        <p>A base de dados pode estar corrompida. Tente recarregar as planilhas.</p>
-                    `;
+                    noResults.innerHTML = `<i class="fas fa-exclamation-triangle fa-3x mb-4 text-red-500"></i><p class="text-xl">Ocorreu um erro na busca.</p><p>A base de dados pode estar corrompida. Tente recarregar as planilhas.</p>`;
                     noResults.style.display = 'block';
                 }
             };
+            
+            const copyToClipboard = (elementId, button) => {
+                const text = document.getElementById(elementId).innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalIcon = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+                    setTimeout(() => { button.innerHTML = originalIcon; }, 1500);
+                });
+            };
 
-            searchInput.addEventListener('input', searchProducts);
+            const callGeminiAPI = async (prompt) => {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                const systemInstruction = { parts: [{ text: `Você é um especialista em copywriting para e-commerce. Sua tarefa é criar um título e uma descrição de vendas para produtos, em português do Brasil. O título deve seguir o formato: "Produto, Marca, Modelo, especificação e material". A descrição deve ser dividida em três partes: "Texto de descrição" (um parágrafo de venda), "Características do produto" (uma lista de destaques), e "Especificações" (uma lista de detalhes técnicos). O resultado deve ser um JSON válido com a seguinte estrutura: {"tituloOtimizado": "seu título", "descricaoVenda": {"textoDescricao": "seu parágrafo", "caracteristicas": ["item 1", "item 2"], "especificacoes": ["item 1", "item 2"]}}. ` }] };
+                const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction, generationConfig: { responseMimeType: "application/json" } };
+                let retries = 3;
+                while (retries > 0) {
+                    try {
+                        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const result = await response.json();
+                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (text) return JSON.parse(text);
+                    } catch (error) {
+                        retries--;
+                        if (retries === 0) throw error;
+                        await new Promise(res => setTimeout(res, 1000 * (3 - retries)));
+                    }
+                }
+                throw new Error("Falha ao chamar a API após várias tentativas.");
+            };
+
+            const showAiPanel = async (index) => {
+                const product = currentSearchResults[index];
+                if (!product) return;
+                
+                elements.aiPlaceholder.classList.add('hidden');
+                elements.aiContent.innerHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between items-center"><h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Título Otimizado</h3><button data-copy-target="aiOptimizedTitle" class="text-gray-400 hover:text-blue-500" title="Copiar"><i class="far fa-copy"></i></button></div>
+                            <div id="aiOptimizedTitle" class="mt-2 p-3 bg-gray-100 dark:bg-slate-700 rounded-md text-gray-800 dark:text-gray-100 animate-pulse h-8"></div>
+                        </div>
+                        <div>
+                             <div class="flex justify-between items-center"><h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Descrição de Venda</h3><button data-copy-target="aiSalesDescription" class="text-gray-400 hover:text-blue-500" title="Copiar"><i class="far fa-copy"></i></button></div>
+                             <div id="aiSalesDescription" class="mt-2 p-3 bg-gray-100 dark:bg-slate-700 rounded-md text-gray-800 dark:text-gray-100 animate-pulse h-24"></div>
+                        </div>
+                    </div>`;
+                
+                elements.aiContent.querySelector('button[data-copy-target="aiOptimizedTitle"]').onclick = function() { copyToClipboard('aiOptimizedTitle', this); };
+                elements.aiContent.querySelector('button[data-copy-target="aiSalesDescription"]').onclick = function() { copyToClipboard('aiSalesDescription', this); };
+
+
+                const productInfo = Object.entries(product).map(([key, value]) => `${key}: ${value}`).join('\n');
+                const prompt = `Com base nas seguintes informações do produto, gere o título e a descrição:\n\n${productInfo}`;
+
+                try {
+                    const aiResult = await callGeminiAPI(prompt);
+                    const { tituloOtimizado, descricaoVenda } = aiResult;
+                    
+                    const titleEl = document.getElementById('aiOptimizedTitle');
+                    const descriptionEl = document.getElementById('aiSalesDescription');
+
+                    if (titleEl && descriptionEl) {
+                        titleEl.textContent = tituloOtimizado;
+                        titleEl.classList.remove('animate-pulse', 'h-8');
+
+                        let descriptionHTML = `<p class="mb-2">${descricaoVenda.textoDescricao}</p>`;
+                        if (descricaoVenda.caracteristicas && descricaoVenda.caracteristicas.length > 0) {
+                            descriptionHTML += `<strong class="block mt-4 mb-1 text-gray-600 dark:text-gray-300">Características:</strong><ul class="list-disc list-inside space-y-1">`;
+                            descricaoVenda.caracteristicas.forEach(item => { descriptionHTML += `<li>${item}</li>`; });
+                            descriptionHTML += `</ul>`;
+                        }
+                        if (descricaoVenda.especificacoes && descricaoVenda.especificacoes.length > 0) {
+                            descriptionHTML += `<strong class="block mt-4 mb-1 text-gray-600 dark:text-gray-300">Especificações:</strong><ul class="list-disc list-inside space-y-1">`;
+                            descricaoVenda.especificacoes.forEach(item => { descriptionHTML += `<li>${item}</li>`; });
+                            descriptionHTML += `</ul>`;
+                        }
+                        descriptionEl.innerHTML = descriptionHTML;
+                        descriptionEl.classList.remove('animate-pulse', 'h-24');
+                    }
+                } catch (error) {
+                    console.error("AI Error:", error);
+                    elements.aiContent.innerHTML = `<p class="text-red-500 text-center">Falha ao gerar conteúdo. Tente novamente.</p>`;
+                }
+            };
+            
+            updateDatabaseSummaryUI();
+            elements.searchInput.addEventListener('input', searchProducts);
         });
     </script>
 </body>
