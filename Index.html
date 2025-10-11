@@ -566,7 +566,7 @@
             };
 
             const callGeminiAPI = async (prompt) => {
-                const apiKey = "";
+                const apiKey = "AIzaSyD26PBvpBwYhm1wMNx6ZaZxDkCWJmUu3SI";
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                 const systemInstruction = { parts: [{ text: `Você é um especialista em copywriting para e-commerce. Sua tarefa é criar um título e uma descrição de vendas para produtos, em português do Brasil. O título deve seguir o formato: "Produto, Marca, Modelo, especificação e material". A descrição deve ser dividida em três partes: "Texto de descrição" (um parágrafo de venda), "Características do produto" (uma lista de destaques), e "Especificações" (uma lista de detalhes técnicos). O resultado deve ser um JSON válido com a seguinte estrutura: {"tituloOtimizado": "seu título", "descricaoVenda": {"textoDescricao": "seu parágrafo", "caracteristicas": ["item 1", "item 2"], "especificacoes": ["item 1", "item 2"]}}. ` }] };
                 const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction, generationConfig: { responseMimeType: "application/json" } };
