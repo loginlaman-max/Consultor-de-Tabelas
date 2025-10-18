@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Produtos e Ferramenta de Títulos</title>
+    <title>Buscador e Otimizador Inteligente</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -45,83 +45,253 @@
         .dark .table-auto th, .dark .table-auto td {
             border-color: #374151;
         }
+        
+        /* Sidebar transitions */
+        #sidebar {
+            transition: width 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        #sidebar.collapsed {
+            width: 80px;
+        }
+        #sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+        #sidebar.collapsed nav a {
+            justify-content: center;
+        }
+        #sidebar.collapsed nav a .fa-fw {
+            margin-left: 0;
+        }
+        #sidebar-toggle-icon {
+            transition: transform 0.3s ease-in-out;
+        }
+        #sidebar.collapsed #sidebar-toggle-icon {
+            transform: rotate(180deg);
+        }
+        .ai-method-btn.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+        }
+        .ai-method-btn:not(.active) {
+            background-color: #e5e7eb; /* gray-200 */
+            color: #374151; /* gray-700 */
+        }
+        .dark .ai-method-btn:not(.active) {
+            background-color: #374151; /* gray-700 */
+            color: #d1d5db; /* gray-300 */
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
 
-    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20 transition-colors duration-300">
-        <div class="container mx-auto p-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Buscador de Produtos</h1>
-            <div class="flex items-center space-x-4">
-                <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
-                    <i id="theme-toggle-dark-icon" class="fas fa-moon hidden w-5 h-5"></i>
-                    <i id="theme-toggle-light-icon" class="fas fa-sun hidden w-5 h-5"></i>
-                </button>
-                 <button id="titleToolButton" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors text-2xl" title="Ferramenta de Padrões de Título">
-                    <i class="fas fa-magic"></i>
-                </button>
-                <button id="settingsButton" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors text-2xl" title="Configurações do Buscador">
-                    <i class="fas fa-cog"></i>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <div class="container mx-auto p-4 md:p-8">
-        
-        <div class="text-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-slate-900 p-8 md:p-12 rounded-xl shadow-lg mb-8 max-w-7xl mx-auto">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4">Encontre e Otimize Seus Produtos</h2>
-            <p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
-                Carregue suas planilhas, pesquise instantaneamente e use a IA para criar títulos e descrições de venda perfeitos.
-            </p>
-            <div class="bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl shadow-inner max-w-4xl mx-auto backdrop-blur-sm">
-                 <div class="mb-4 text-left">
-                     <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Resumo da Base de Dados:</h3>
-                     <div id="databaseSummary" class="mt-1"></div>
-                 </div>
-                <div class="relative">
-                    <i class="fas fa-search search-icon text-gray-400"></i>
-                    <input type="text" id="searchInput" placeholder="Buscar por código, modelo, descrição..."
-                           class="w-full p-4 border border-gray-300 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-white dark:bg-gray-800 shadow-lg w-64 flex flex-col justify-between absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 z-30">
+            <div>
+                <div class="px-4 py-7">
+                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white sidebar-text">Ferramentas</h1>
                 </div>
+                <nav class="px-2 space-y-2">
+                    <a href="#" id="product-search-tool-btn" class="flex items-center py-2.5 px-4 rounded transition duration-200 bg-blue-600 text-white">
+                        <i class="fas fa-search fa-fw"></i> 
+                        <span class="sidebar-text ml-3">Buscador de Produtos</span>
+                    </a>
+                    <a href="#" id="title-tool-btn" class="flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 dark:hover:text-white">
+                        <i class="fas fa-magic fa-fw"></i> 
+                        <span class="sidebar-text ml-3">Ferramenta de Títulos</span>
+                    </a>
+                </nav>
             </div>
-        </div>
-
-        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <main id="resultsContainer" class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6"></main>
-
-            <aside id="aiPanel" class="lg:col-span-4 lg:sticky top-28 h-fit hidden">
-                 <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-                     <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 flex items-center"><i class="fas fa-robot text-blue-500 mr-3"></i>Assistente de Vendas IA</h2>
-                     <div id="aiContent"></div>
-                     <div id="aiPlaceholder" class="text-center text-gray-500 dark:text-gray-400 py-10">
-                         <i class="fas fa-mouse-pointer fa-3x mb-4"></i>
-                         <p class="text-lg">Clique em um produto para gerar o título e a descrição de venda.</p>
-                     </div>
-                 </div>
-            </aside>
-        </div>
-
-        <div id="noResults" class="hidden text-center text-gray-500 dark:text-gray-400 mt-16">
-            <i class="fas fa-box-open fa-4x mb-4"></i>
-            <p class="text-2xl font-semibold">Nenhum produto encontrado.</p>
-        </div>
-        
-        <div id="initialState" class="text-center text-gray-500 dark:text-gray-400 mt-16">
-            <div class="max-w-md mx-auto bg-white dark:bg-gray-800 p-10 rounded-xl shadow-md border dark:border-gray-700">
-                <i class="fas fa-database fa-4x mb-4 text-gray-400"></i>
-                <p class="text-2xl font-semibold">Nenhuma planilha carregada.</p>
-                <p class="mt-2">Clique na engrenagem <i class="fas fa-cog"></i> no canto superior para carregar seus arquivos.</p>
+            <div class="p-2">
+                 <button id="sidebar-toggle-btn" class="w-full flex items-center justify-center py-2 px-4 rounded transition duration-200 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i id="sidebar-toggle-icon" class="fas fa-chevron-left"></i>
+                </button>
             </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20 transition-colors duration-300">
+                <div class="container mx-auto p-4 flex justify-between items-center">
+                    <button id="mobile-menu-button" class="md:hidden text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-bars fa-lg"></i>
+                    </button>
+                    <h1 id="header-title" class="text-2xl font-bold text-gray-800 dark:text-white hidden md:block">Buscador e Otimizador Inteligente</h1>
+                    <div class="flex items-center space-x-4">
+                        <button id="settingsButton" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors text-2xl" title="Configurações do Buscador">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
+                            <i id="theme-toggle-dark-icon" class="fas fa-moon hidden w-5 h-5"></i>
+                            <i id="theme-toggle-light-icon" class="fas fa-sun hidden w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
+                <div id="product-search-tool" class="container mx-auto p-4 md:p-8">
+                    
+                     <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md mb-8 max-w-7xl mx-auto border dark:border-gray-700">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                            <div class="md:col-span-1">
+                                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Resumo da Base de Dados:</h3>
+                                <div id="databaseSummary" class="mt-1 text-sm"></div>
+                            </div>
+                            <div class="md:col-span-2 relative">
+                                <i class="fas fa-search search-icon text-gray-400"></i>
+                                <input type="text" id="searchInput" placeholder="Buscar por código, modelo, descrição..."
+                                       class="w-full p-4 border border-gray-300 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
+                            </div>
+                        </div>
+                    </div>
+
+                     <div class="max-w-7xl mx-auto mb-4 flex justify-end items-center gap-2">
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Visualização:</span>
+                        <div class="flex items-center gap-1 rounded-lg bg-gray-200 dark:bg-gray-700 p-1">
+                            <button id="view-grid-btn" class="p-2 rounded-md transition-colors" title="Modo Grade">
+                                <i class="fas fa-th-large"></i>
+                            </button>
+                            <button id="view-list-btn" class="p-2 rounded-md transition-colors" title="Modo Lista">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <div id="resultsContainer" class="lg:col-span-8"></div>
+
+                        <aside id="aiPanel" class="lg:col-span-4 lg:sticky top-20 h-fit hidden">
+                             <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                                 <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 flex items-center"><i class="fas fa-robot text-blue-500 mr-3"></i>Assistente de Vendas IA</h2>
+                                 <div id="aiContent"></div>
+                                 <div id="aiPlaceholder" class="text-center text-gray-500 dark:text-gray-400 py-10">
+                                     <i class="fas fa-mouse-pointer fa-3x mb-4"></i>
+                                     <p class="text-lg">Clique em um produto para gerar o título e a descrição de venda.</p>
+                                 </div>
+                             </div>
+                        </aside>
+                    </div>
+
+                    <div id="noResults" class="hidden text-center text-gray-500 dark:text-gray-400 mt-16">
+                        <i class="fas fa-box-open fa-4x mb-4"></i>
+                        <p class="text-2xl font-semibold">Nenhum produto encontrado.</p>
+                    </div>
+                    
+                    <div id="initialState" class="text-center text-gray-500 dark:text-gray-400 mt-16">
+                        <div class="max-w-md mx-auto bg-white dark:bg-gray-800 p-10 rounded-xl shadow-md border dark:border-gray-700">
+                            <i class="fas fa-database fa-4x mb-4 text-gray-400"></i>
+                            <p class="text-2xl font-semibold">Nenhuma planilha carregada.</p>
+                            <p class="mt-2">Clique na engrenagem <i class="fas fa-cog"></i> para carregar seus arquivos.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="title-tool" class="container mx-auto p-4 md:p-8 hidden">
+                    <div class="text-center mb-8">
+                        <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Ferramenta de Padrões de Título com IA</h2>
+                        <p class="text-gray-600 dark:text-gray-400 mt-2">Defina uma estrutura, armazene modelos e corrija títulos individuais ou em lote.</p>
+                    </div>
+
+                    <div class="space-y-8">
+                        <!-- Section 1: AI Logic Configuration -->
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border dark:border-gray-700">
+                             <h3 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200 flex items-center"><span class="bg-indigo-600 text-white rounded-full h-8 w-8 text-sm flex items-center justify-center mr-3">1</span> Configure a Lógica da IA</h3>
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div>
+                                    <label for="logic-structure-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estrutura Lógica</label>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Defina a "fórmula" do seu título. A IA irá identificar e ordenar as partes. Separe os termos por vírgula.</p>
+                                    <div class="relative">
+                                        <input type="text" id="logic-structure-input" placeholder="Produto, Marca, Modelo, Especificação..." class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        <span id="logic-structure-status" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-green-500 opacity-0 transition-opacity">Salvo!</span>
+                                    </div>
+                                    
+                                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-6 mb-2">Modelos Salvos</h4>
+                                    <div id="templates-list" class="space-y-2 max-h-48 overflow-y-auto pr-2 border dark:border-gray-700 rounded-lg p-2 bg-gray-50 dark:bg-gray-900"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Modelos por Categoria</label>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Adicione exemplos. A IA irá aprender o padrão exato de cada categoria.</p>
+                                    <input type="text" id="template-category" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2" placeholder="Categoria, Ex: Câmera IP">
+                                    <textarea id="template-title" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2" rows="3" placeholder="Título Modelo, Ex: CÂMERA IP..."></textarea>
+                                    <button id="add-template-btn" class="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Salvar Modelo</button>
+                                </div>
+                             </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Section 2: Manual Generation -->
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border dark:border-gray-700">
+                                <h3 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200 flex items-center"><span class="bg-indigo-600 text-white rounded-full h-8 w-8 text-sm flex items-center justify-center mr-3">2</span> Gerar Título (Manual)</h3>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Método da IA</label>
+                                    <div class="flex rounded-md shadow-sm">
+                                        <button id="manual-use-logic-btn" class="ai-method-btn w-full py-2 px-4 text-sm font-medium rounded-l-md">Usar Estrutura Lógica</button>
+                                        <button id="manual-use-models-btn" class="ai-method-btn w-full py-2 px-4 text-sm font-medium rounded-r-md">Usar Modelos Salvos</button>
+                                    </div>
+                                </div>
+                                <textarea id="new-product-description" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" rows="4" placeholder="Cole aqui a descrição do novo produto..."></textarea>
+                                <button id="generate-btn" class="w-full mt-2 py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 flex justify-center items-center">
+                                    <span id="btn-text">Gerar Título</span>
+                                    <div id="loader" class="loader hidden"></div>
+                                </button>
+                                <div id="results-card" class="hidden mt-4">
+                                    <div id="suggestion-output" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-800 dark:text-gray-100"></div>
+                                    <button id="copy-btn" class="hidden w-full mt-2 py-2 px-4 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">Copiar Título</button>
+                                    <div id="error-message" class="text-center text-red-500 mt-2"></div>
+                                </div>
+                            </div>
+                             <!-- Section 3: Batch Correction -->
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border dark:border-gray-700">
+                                <h3 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200 flex items-center"><span class="bg-indigo-600 text-white rounded-full h-8 w-8 text-sm flex items-center justify-center mr-3">3</span> Correção de Planilhas em Lote</h3>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Método da IA</label>
+                                    <div class="flex rounded-md shadow-sm">
+                                        <button id="batch-use-logic-btn" class="ai-method-btn w-full py-2 px-4 text-sm font-medium rounded-l-md">Usar Estrutura Lógica</button>
+                                        <button id="batch-use-models-btn" class="ai-method-btn w-full py-2 px-4 text-sm font-medium rounded-r-md">Usar Modelos Salvos</button>
+                                    </div>
+                                </div>
+                                <label for="csv-file-input" class="file-upload-wrapper block border-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 cursor-pointer p-4 rounded-lg border-2 border-dashed text-center mb-2">
+                                   <i class="fas fa-file-import fa-2x text-gray-400 mb-2"></i>
+                                   <p id="batch-file-name" class="text-gray-600 dark:text-gray-300 text-sm">Clique para selecionar planilha (.csv, .xlsx)</p>
+                                </label>
+                                <input type="file" id="csv-file-input" accept=".csv,.xlsx,.xls">
+                                <input type="text" id="title-column-name" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Nome da Coluna com Títulos (Ex: Titulo)">
+                                <div class="mt-4 flex space-x-2">
+                                   <button id="process-sheet-btn" class="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Processar</button>
+                                   <button id="stop-process-btn" class="w-full py-2 px-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 hidden">Parar</button>
+                                </div>
+                                <div id="batch-results-section" class="hidden mt-4">
+                                   <p id="progress-indicator" class="text-sm text-gray-600 dark:text-gray-400 mb-2"></p>
+                                   <div class="max-h-48 overflow-y-auto">
+                                       <table class="w-full text-sm text-left table-auto">
+                                           <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                                               <tr>
+                                                   <th class="w-1/2">Título Original</th>
+                                                   <th class="w-1/2">Título Corrigido (IA)</th>
+                                               </tr>
+                                           </thead>
+                                           <tbody id="results-table-body"></tbody>
+                                       </table>
+                                   </div>
+                                   <div class="flex space-x-2 mt-2">
+                                       <button id="download-csv-btn" class="w-full py-2 px-3 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700">Baixar .csv</button>
+                                       <button id="download-xlsx-btn" class="w-full py-2 px-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">Baixar .xlsx</button>
+                                   </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
-
+    
     <!-- Modal de Configurações do Buscador -->
     <div id="settingsModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div id="modalContent" class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-2xl w-full relative transform transition-all duration-300 scale-95 opacity-0 overflow-y-auto max-h-[90vh]">
-            <button id="closeModalButton" class="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white text-3xl">&times;</button>
+        <div id="settingsModalContent" class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-2xl w-full relative transform transition-all duration-300 scale-95 opacity-0 overflow-y-auto max-h-[90vh]">
+            <button id="closeSettingsModalButton" class="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white text-3xl">&times;</button>
             <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-6 text-center">Configurações do Buscador</h2>
-            
             <div>
                 <div class="mt-6">
                     <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Gerenciar Arquivos Carregados</h4>
@@ -148,73 +318,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Modal da Ferramenta de Títulos -->
-    <div id="titleToolModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div id="titleToolModalContent" class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-2xl w-full relative transform transition-all duration-300 scale-95 opacity-0 overflow-y-auto max-h-[90vh]">
-            <button id="closeTitleToolModalButton" class="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white text-3xl">&times;</button>
-            <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-6 text-center">Ferramenta de Padrões de Título com IA</h2>
-            
-            <div class="space-y-8">
-                 <!-- Step 1: Manage Templates -->
-                 <div>
-                     <h4 class="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-200">1. Gerenciar Modelos</h4>
-                     <input type="text" id="template-category" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2" placeholder="Categoria do Modelo">
-                     <textarea id="template-title" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2" rows="2" placeholder="Título do Modelo (Ex: PRODUTO MARCA MODELO)"></textarea>
-                     <button id="add-template-btn" class="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Salvar Modelo</button>
-                     <div id="templates-list" class="mt-4 space-y-2 max-h-40 overflow-y-auto pr-2"></div>
-                 </div>
-                 
-                 <!-- Step 2: Manual Generation -->
-                 <div>
-                     <h4 class="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-200">2. Gerar Novo Título (Manual)</h4>
-                     <textarea id="new-product-description" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" rows="3" placeholder="Cole a descrição do novo produto aqui..."></textarea>
-                     <button id="generate-btn" class="w-full mt-2 py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 flex justify-center items-center">
-                         <span id="btn-text">Gerar Título</span>
-                         <div id="loader" class="loader hidden"></div>
-                     </button>
-                     <div id="results-card" class="hidden mt-2">
-                         <div id="suggestion-output" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-800 dark:text-gray-100"></div>
-                         <button id="copy-btn" class="hidden w-full mt-2 py-2 px-4 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">Copiar Título</button>
-                         <div id="error-message" class="text-center text-red-500 mt-2"></div>
-                     </div>
-                 </div>
-                 
-                 <!-- Step 3: Batch Correction -->
-                 <div>
-                     <h4 class="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-200">3. Correção de Planilhas em Lote</h4>
-                     <input type="text" id="title-column-name" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2" placeholder="Nome da Coluna com Títulos (Ex: Titulo)">
-                     <label for="csv-file-input" class="file-upload-wrapper block border-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 cursor-pointer p-4 rounded-lg border-2 border-dashed text-center">
-                        <i class="fas fa-file-import fa-2x text-gray-400 mb-2"></i>
-                        <p id="batch-file-name" class="text-gray-600 dark:text-gray-300 text-sm">Clique para selecionar planilha</p>
-                     </label>
-                     <input type="file" id="csv-file-input" accept=".csv,.xlsx,.xls">
-                     <div class="mt-4 flex space-x-2">
-                        <button id="process-sheet-btn" class="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Processar</button>
-                        <button id="stop-process-btn" class="w-full py-2 px-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 hidden">Parar</button>
-                     </div>
-                     <div id="batch-results-section" class="hidden mt-4">
-                        <p id="progress-indicator" class="text-sm text-gray-600 dark:text-gray-400 mb-2"></p>
-                        <div class="max-h-60 overflow-y-auto">
-                            <table class="w-full text-sm text-left table-auto">
-                                <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
-                                    <tr>
-                                        <th class="w-1/2">Título Original</th>
-                                        <th class="w-1/2">Título Corrigido (IA)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="results-table-body"></tbody>
-                            </table>
-                        </div>
-                        <div class="flex space-x-2 mt-2">
-                            <button id="download-csv-btn" class="w-full py-2 px-3 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700">Baixar .csv</button>
-                            <button id="download-xlsx-btn" class="w-full py-2 px-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">Baixar .xlsx</button>
-                        </div>
-                     </div>
-                 </div>
-            </div>
-        </div>
-    </div>
 
 
     <script>
@@ -225,14 +328,33 @@
         let templates = [];
         let correctedSheetData = [];
         let stopProcessing = false;
+        let manualAiMethod = 'models'; // 'logic' or 'models'
+        let batchAiMethod = 'models';  // 'logic' or 'models'
+        let logicSaveTimeout;
 
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM ELEMENTS ---
             const elements = {
-                // Main UI
+                // Main UI & Layout
+                sidebar: document.getElementById('sidebar'),
+                sidebarToggleBtn: document.getElementById('sidebar-toggle-btn'),
+                sidebarToggleIcon: document.getElementById('sidebar-toggle-icon'),
+                mobileMenuButton: document.getElementById('mobile-menu-button'),
+                headerTitle: document.getElementById('header-title'),
                 themeToggleBtn: document.getElementById('theme-toggle'),
                 themeToggleDarkIcon: document.getElementById('theme-toggle-dark-icon'),
                 themeToggleLightIcon: document.getElementById('theme-toggle-light-icon'),
+                settingsButton: document.getElementById('settingsButton'),
+
+                // Tool Containers
+                productSearchTool: document.getElementById('product-search-tool'),
+                titleTool: document.getElementById('title-tool'),
+                
+                // Sidebar Buttons
+                productSearchToolBtn: document.getElementById('product-search-tool-btn'),
+                titleToolBtn: document.getElementById('title-tool-btn'),
+
+                // Product Searcher Elements
                 searchInput: document.getElementById('searchInput'),
                 resultsContainer: document.getElementById('resultsContainer'),
                 noResults: document.getElementById('noResults'),
@@ -241,29 +363,26 @@
                 aiPanel: document.getElementById('aiPanel'),
                 aiContent: document.getElementById('aiContent'),
                 aiPlaceholder: document.getElementById('aiPlaceholder'),
-                // Settings Modal
-                settingsButton: document.getElementById('settingsButton'),
-                closeModalButton: document.getElementById('closeModalButton'),
-                settingsModal: document.getElementById('settingsModal'),
-                modalContent: document.getElementById('modalContent'),
-                 // Title Tool Modal
-                titleToolButton: document.getElementById('titleToolButton'),
-                titleToolModal: document.getElementById('titleToolModal'),
-                titleToolModalContent: document.getElementById('titleToolModalContent'),
-                closeTitleToolModalButton: document.getElementById('closeTitleToolModalButton'),
-                // File Searcher
                 fileInput: document.getElementById('fileInput'),
-                fileUploadWrapper: document.querySelector('.file-upload-wrapper'),
+                fileUploadWrapper: document.querySelector('#settingsModal .file-upload-wrapper'),
                 loadFileButton: document.getElementById('loadFileButton'),
                 statusMessage: document.getElementById('statusMessage'),
                 fileStagingArea: document.getElementById('fileStagingArea'),
                 fileManagementList: document.getElementById('fileManagementList'),
                 removeAllButton: document.getElementById('removeAllButton'),
-                // Title Tool
+                viewGridBtn: document.getElementById('view-grid-btn'),
+                viewListBtn: document.getElementById('view-list-btn'),
+                
+                // Title Tool Elements
+                logicStructureInput: document.getElementById('logic-structure-input'),
+                logicStructureStatus: document.getElementById('logic-structure-status'),
                 templateCategoryInput: document.getElementById('template-category'),
                 templateTitleInput: document.getElementById('template-title'),
                 addTemplateBtn: document.getElementById('add-template-btn'),
                 templatesListContainer: document.getElementById('templates-list'),
+                
+                manualUseLogicBtn: document.getElementById('manual-use-logic-btn'),
+                manualUseModelsBtn: document.getElementById('manual-use-models-btn'),
                 newProductDescriptionInput: document.getElementById('new-product-description'),
                 generateBtn: document.getElementById('generate-btn'),
                 resultsCard: document.getElementById('results-card'),
@@ -272,6 +391,9 @@
                 errorMessage: document.getElementById('error-message'),
                 btnText: document.getElementById('btn-text'),
                 loader: document.getElementById('loader'),
+
+                batchUseLogicBtn: document.getElementById('batch-use-logic-btn'),
+                batchUseModelsBtn: document.getElementById('batch-use-models-btn'),
                 csvFileInput: document.getElementById('csv-file-input'),
                 titleColumnNameInput: document.getElementById('title-column-name'),
                 processSheetBtn: document.getElementById('process-sheet-btn'),
@@ -282,6 +404,11 @@
                 downloadCsvBtn: document.getElementById('download-csv-btn'),
                 downloadXlsxBtn: document.getElementById('download-xlsx-btn'),
                 batchFileName: document.getElementById('batch-file-name'),
+                
+                // Settings Modal
+                settingsModal: document.getElementById('settingsModal'),
+                settingsModalContent: document.getElementById('settingsModalContent'),
+                closeSettingsModalButton: document.getElementById('closeSettingsModalButton'),
             };
 
             // --- THEME MANAGEMENT ---
@@ -303,33 +430,98 @@
                 localStorage.setItem('color-theme', newTheme);
                 applyTheme(newTheme);
             });
-
-            // --- MODAL MANAGEMENT ---
-            const openModal = () => {
+            
+            // --- SETTINGS MODAL ---
+            const openSettingsModal = () => {
                 updateFileManagementUI();
                 elements.settingsModal.classList.remove('hidden');
-                setTimeout(() => elements.modalContent.classList.remove('scale-95', 'opacity-0'), 10);
+                setTimeout(() => elements.settingsModalContent.classList.remove('scale-95', 'opacity-0'), 10);
             };
-            const closeModal = () => {
-                elements.modalContent.classList.add('scale-95', 'opacity-0');
+            const closeSettingsModal = () => {
+                elements.settingsModalContent.classList.add('scale-95', 'opacity-0');
                 setTimeout(() => elements.settingsModal.classList.add('hidden'), 300);
             };
-            elements.settingsButton.addEventListener('click', openModal);
-            elements.closeModalButton.addEventListener('click', closeModal);
-            elements.settingsModal.addEventListener('click', (e) => e.target === elements.settingsModal && closeModal());
+            elements.settingsButton.addEventListener('click', openSettingsModal);
+            elements.closeSettingsModalButton.addEventListener('click', closeSettingsModal);
+            elements.settingsModal.addEventListener('click', (e) => e.target === elements.settingsModal && closeSettingsModal());
+
+
+            // --- SIDEBAR & NAVIGATION MANAGEMENT ---
+            elements.mobileMenuButton.addEventListener('click', () => {
+                elements.sidebar.classList.toggle('-translate-x-full');
+            });
+
+            const setSidebarTooltips = (collapsed) => {
+                const productSearchText = elements.productSearchToolBtn.querySelector('.sidebar-text').textContent;
+                const titleToolText = elements.titleToolBtn.querySelector('.sidebar-text').textContent;
+
+                if (collapsed) {
+                    elements.productSearchToolBtn.title = productSearchText;
+                    elements.titleToolBtn.title = titleToolText;
+                } else {
+                    elements.productSearchToolBtn.title = '';
+                    elements.titleToolBtn.title = '';
+                }
+            };
+
+            const toggleSidebar = () => {
+                const isCollapsed = elements.sidebar.classList.toggle('collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
+                setSidebarTooltips(isCollapsed);
+            };
+
+            elements.sidebarToggleBtn.addEventListener('click', toggleSidebar);
+
+            const applyInitialSidebarState = () => {
+                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (isCollapsed) {
+                    elements.sidebar.classList.add('collapsed');
+                }
+                setSidebarTooltips(isCollapsed);
+            };
             
-            // --- Title Tool Modal Management ---
-            const openTitleToolModal = () => {
-                elements.titleToolModal.classList.remove('hidden');
-                setTimeout(() => elements.titleToolModalContent.classList.remove('scale-95', 'opacity-0'), 10);
+            const setActiveTool = (toolName) => {
+                const { productSearchTool, titleTool, productSearchToolBtn, titleToolBtn, settingsButton, headerTitle } = elements;
+                
+                productSearchTool.classList.add('hidden');
+                titleTool.classList.add('hidden');
+
+                productSearchToolBtn.classList.remove('bg-blue-600', 'text-white');
+                productSearchToolBtn.classList.add('hover:bg-gray-200', 'dark:hover:bg-gray-700', 'text-gray-500', 'dark:text-gray-400', 'dark:hover:text-white');
+                titleToolBtn.classList.remove('bg-blue-600', 'text-white');
+                titleToolBtn.classList.add('hover:bg-gray-200', 'dark:hover:bg-gray-700', 'text-gray-500', 'dark:text-gray-400', 'dark:hover:text-white');
+                
+                if (toolName === 'productSearch') {
+                    productSearchTool.classList.remove('hidden');
+                    productSearchToolBtn.classList.add('bg-blue-600', 'text-white');
+                    productSearchToolBtn.classList.remove('hover:bg-gray-200', 'dark:hover:bg-gray-700', 'text-gray-500', 'dark:text-gray-400', 'dark:hover:text-white');
+                    settingsButton.classList.remove('hidden');
+                    headerTitle.textContent = 'Buscador de Produtos';
+
+                } else if (toolName === 'titleTool') {
+                    titleTool.classList.remove('hidden');
+                    titleToolBtn.classList.add('bg-blue-600', 'text-white');
+                    titleToolBtn.classList.remove('hover:bg-gray-200', 'dark:hover:bg-gray-700', 'text-gray-500', 'dark:text-gray-400', 'dark:hover:text-white');
+                    settingsButton.classList.add('hidden');
+                    headerTitle.textContent = 'Ferramenta de Títulos';
+                }
             };
-            const closeTitleToolModal = () => {
-                elements.titleToolModalContent.classList.add('scale-95', 'opacity-0');
-                setTimeout(() => elements.titleToolModal.classList.add('hidden'), 300);
-            };
-            elements.titleToolButton.addEventListener('click', openTitleToolModal);
-            elements.closeTitleToolModalButton.addEventListener('click', closeTitleToolModal);
-            elements.titleToolModal.addEventListener('click', (e) => e.target === elements.titleToolModal && closeTitleToolModal());
+            
+            elements.productSearchToolBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveTool('productSearch');
+                 if (window.innerWidth < 768) { 
+                    elements.sidebar.classList.add('-translate-x-full');
+                }
+            });
+
+            elements.titleToolBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                setActiveTool('titleTool');
+                 if (window.innerWidth < 768) { 
+                    elements.sidebar.classList.add('-translate-x-full');
+                }
+            });
 
             // --- SHARED UTILITY FUNCTIONS ---
             const setLoading = (isLoading, button, textEl, loaderEl) => {
@@ -413,7 +605,7 @@
             };
 
             // --- BUSCADOR DE PRODUTOS: FUNCTIONS ---
-            const hideCard = (cardId) => {
+             const hideCard = (cardId) => {
                 const cardElement = document.getElementById(cardId);
                 if (cardElement) {
                     cardElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -543,17 +735,16 @@
 
             elements.fileInput.addEventListener('change', (event) => addFilesToStaging(event.target.files));
 
-            const { fileUploadWrapper } = elements;
-            fileUploadWrapper.addEventListener('dragover', (e) => {
+            elements.fileUploadWrapper.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                fileUploadWrapper.classList.add('bg-blue-50', 'dark:bg-blue-900/50', 'border-blue-500');
+                elements.fileUploadWrapper.classList.add('bg-blue-50', 'dark:bg-blue-900/50', 'border-blue-500');
             });
-            fileUploadWrapper.addEventListener('dragleave', () => {
-                fileUploadWrapper.classList.remove('bg-blue-50', 'dark:bg-blue-900/50', 'border-blue-500');
+            elements.fileUploadWrapper.addEventListener('dragleave', () => {
+                elements.fileUploadWrapper.classList.remove('bg-blue-50', 'dark:bg-blue-900/50', 'border-blue-500');
             });
-            fileUploadWrapper.addEventListener('drop', (e) => {
+            elements.fileUploadWrapper.addEventListener('drop', (e) => {
                 e.preventDefault();
-                fileUploadWrapper.classList.remove('bg-blue-50', 'dark:bg-blue-900/50', 'border-blue-500');
+                elements.fileUploadWrapper.classList.remove('bg-blue-50', 'dark:bg-blue-900/50', 'border-blue-500');
                 addFilesToStaging(e.dataTransfer.files);
             });
             
@@ -686,7 +877,10 @@
                 updateDatabaseSummaryUI();
                 searchInput.value = '';
                 displayResults([]);
-                setTimeout(closeModal, 2000);
+                setTimeout(() => {
+                    closeSettingsModal();
+                    statusMessage.textContent = '';
+                }, 2000);
             };
 
             const formatPrice = (value) => {
@@ -700,55 +894,138 @@
                 return isNaN(number) ? value : number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             };
             
+            // --- Display Results ---
+            let currentView = localStorage.getItem('productView') || 'grid';
+
+            const setActiveView = (view) => {
+                currentView = view;
+                localStorage.setItem('productView', view);
+                
+                const { viewGridBtn, viewListBtn } = elements;
+                const activeClasses = ['bg-white', 'dark:bg-gray-900', 'text-blue-600'];
+                const inactiveClasses = ['text-gray-500', 'dark:text-gray-400'];
+
+                [viewGridBtn, viewListBtn].forEach(btn => {
+                    btn.classList.remove(...activeClasses, ...inactiveClasses);
+                });
+
+                if (view === 'grid') {
+                    viewGridBtn.classList.add(...activeClasses);
+                    viewListBtn.classList.add(...inactiveClasses);
+                } else {
+                    viewListBtn.classList.add(...activeClasses);
+                    viewGridBtn.classList.add(...inactiveClasses);
+                }
+
+                displayResults(currentSearchResults);
+            };
+
+            elements.viewGridBtn.addEventListener('click', () => setActiveView('grid'));
+            elements.viewListBtn.addEventListener('click', () => setActiveView('list'));
+
+
+            const createProductGridCard = (product, index) => {
+                const cardId = `product-card-${index}`;
+                const cardDiv = document.createElement('div');
+                cardDiv.id = cardId;
+                cardDiv.className = "relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer";
+
+                let detailsHtml = '';
+                const priceKeywords = ['pv', 'pp', 'psd', 'pscf'];
+                Object.entries(product).forEach(([key, value]) => {
+                    if (!['sourcesheet', 'sourcefile'].includes(key.toLowerCase()) && value !== undefined && value !== null && String(value).trim() !== '') {
+                        const keyTrimmedLower = key.trim().toLowerCase();
+                        const isPrice = priceKeywords.some(p => keyTrimmedLower.startsWith(p));
+                        const displayValue = isPrice ? formatPrice(value) : value;
+                        detailsHtml += `<div class="py-2 border-b border-gray-100 dark:border-slate-700"><strong class="block text-xs font-medium text-gray-500 dark:text-gray-400">${key}:</strong><span class="block text-base text-gray-800 dark:text-gray-100 break-words">${displayValue}</span></div>`;
+                    }
+                });
+
+                cardDiv.innerHTML = `
+                    <button class="hide-card-btn absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors z-10" title="Ocultar este resultado"><i class="fas fa-times-circle"></i></button>
+                    <span class="inline-block bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-semibold mb-4 px-2.5 py-1 rounded-full self-start"><i class="fas fa-file-alt mr-1"></i> ${product.sourceFile} > ${product.sourceSheet || 'N/A'}</span>
+                    <div class="text-sm space-y-2">${detailsHtml}</div>`;
+                
+                cardDiv.addEventListener('click', () => showAiPanel(index));
+                cardDiv.querySelector('.hide-card-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideCard(cardId);
+                });
+                return cardDiv;
+            };
+
+            const createProductListItem = (product, index) => {
+                const cardId = `product-card-${index}`;
+                const itemDiv = document.createElement('div');
+                itemDiv.id = cardId;
+                itemDiv.className = "relative bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 flex flex-col gap-3 hover:shadow-lg hover:border-blue-500 transition-all duration-300 cursor-pointer";
+                
+                let detailsHtml = '<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-3 text-sm">';
+                const priceKeywords = ['pv', 'pp', 'psd', 'pscf'];
+                Object.entries(product).forEach(([key, value]) => {
+                    if (!['sourcesheet', 'sourcefile'].includes(key.toLowerCase()) && value !== undefined && value !== null && String(value).trim() !== '') {
+                        const keyTrimmedLower = key.trim().toLowerCase();
+                        const isPrice = priceKeywords.some(p => keyTrimmedLower.startsWith(p));
+                        const displayValue = isPrice ? formatPrice(value) : value;
+                        detailsHtml += `
+                            <div class="min-w-0">
+                                <strong class="block font-medium text-gray-500 dark:text-gray-400 text-xs truncate">${key}</strong>
+                                <span class="block text-gray-800 dark:text-gray-100 break-words">${displayValue}</span>
+                            </div>`;
+                    }
+                });
+                detailsHtml += '</div>';
+
+                itemDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="inline-block bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-semibold px-2.5 py-1 rounded-full self-start">
+                            <i class="fas fa-file-alt mr-1"></i> ${product.sourceFile} > ${product.sourceSheet || 'N/A'}
+                        </span>
+                        <button class="hide-card-btn text-gray-400 hover:text-red-500 transition-colors z-10 p-1 -mt-1 -mr-1" title="Ocultar este resultado">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    </div>
+                    ${detailsHtml}
+                `;
+
+                itemDiv.addEventListener('click', (e) => {
+                    if (!e.target.closest('.hide-card-btn')) {
+                        showAiPanel(index);
+                    }
+                });
+                itemDiv.querySelector('.hide-card-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideCard(cardId);
+                });
+                return itemDiv;
+            };
+
             const displayResults = (products) => {
                 const { resultsContainer, initialState, noResults, aiPanel } = elements;
-                resultsContainer.innerHTML = ''; 
+                resultsContainer.innerHTML = '';
+                resultsContainer.className = "lg:col-span-8"; // Reset classes
+
                 if (Object.keys(fileDatabase).length > 0) initialState.style.display = 'none';
                 noResults.style.display = (searchInput.value.trim() !== '' && products.length === 0) ? 'block' : 'none';
 
-                const priceKeywords = ['pv', 'pp', 'psd', 'pscf'];
+                if (products.length === 0) {
+                     aiPanel.classList.add('hidden');
+                     return;
+                }
 
-                products.forEach((product, index) => {
-                    let detailsHtml = '';
-                    Object.entries(product).forEach(([key, value]) => {
-                        if (!['sourcesheet', 'sourcefile'].includes(key.toLowerCase()) && value !== undefined && value !== null && String(value).trim() !== '') {
-                            const keyTrimmedLower = key.trim().toLowerCase();
-                            const isPrice = priceKeywords.some(p => keyTrimmedLower.startsWith(p));
-                            const displayValue = isPrice ? formatPrice(value) : value;
-                            
-                            detailsHtml += `
-                                <div class="py-2 border-b border-gray-100 dark:border-slate-700">
-                                    <strong class="block text-xs font-medium text-gray-500 dark:text-gray-400">${key}:</strong>
-                                    <span class="block text-base text-gray-800 dark:text-gray-100 break-words">${displayValue}</span>
-                                </div>`;
-                        }
+                if (currentView === 'grid') {
+                    resultsContainer.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'gap-6');
+                    products.forEach((product, index) => {
+                        resultsContainer.appendChild(createProductGridCard(product, index));
                     });
-
-                    const cardId = `product-card-${index}`;
-                    const cardDiv = document.createElement('div');
-                    cardDiv.id = cardId;
-                    cardDiv.className = "relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-slate-700 flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer";
-
-                    cardDiv.innerHTML = `
-                        <button class="hide-card-btn absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors z-10" title="Ocultar este resultado">
-                            <i class="fas fa-times-circle"></i>
-                        </button>
-                        <span class="inline-block bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-semibold mb-4 px-2.5 py-1 rounded-full self-start">
-                            <i class="fas fa-file-alt mr-1"></i> ${product.sourceFile} > ${product.sourceSheet || 'N/A'}
-                        </span>
-                        <div class="text-sm space-y-2">${detailsHtml}</div>
-                    `;
-
-                    cardDiv.addEventListener('click', () => showAiPanel(index));
-                    cardDiv.querySelector('.hide-card-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        hideCard(cardId);
+                } else { // list view
+                    resultsContainer.classList.add('flex', 'flex-col', 'gap-3');
+                     products.forEach((product, index) => {
+                        resultsContainer.appendChild(createProductListItem(product, index));
                     });
-
-                    resultsContainer.appendChild(cardDiv);
-                });
+                }
             };
-            
+
             const searchProducts = () => {
                 const { searchInput, aiPanel, resultsContainer, initialState, noResults } = elements;
                 try {
@@ -857,7 +1134,7 @@
                 const productInfo = Object.entries(product).map(([key, value]) => `${key}: ${value}`).join('\n');
                 const prompt = `Com base nas seguintes informações do produto, gere o título e a descrição:\n\n${productInfo}`;
                 
-                const systemInstruction = { parts: [{ text: `Você é um especialista em copywriting para e-commerce. Sua tarefa é criar três títulos distintos e uma descrição de vendas para produtos, em português do Brasil. As saídas devem ser: 1. 'tituloSistema': um título curto, em caixa alta, para uso interno em sistemas. 2. 'tituloMarketplace': um título otimizado para SEO com no máximo 60 caracteres, ideal para marketplaces. 3. 'tituloOtimizado': um título completo e detalhado para e-commerce próprio. 4. 'descricaoVenda': uma descrição dividida em "textoDescricao" (parágrafo de venda), "caracteristicas" (lista de destaques) e "especificacoes" (lista de detalhes técnicos). O resultado deve ser um JSON válido com a seguinte estrutura: {"tituloSistema": "...", "tituloMarketplace": "...", "tituloOtimizado": "...", "descricaoVenda": {"textoDescricao": "...", "caracteristicas": ["..."], "especificacoes": ["..."]}}.` }] };
+                const systemInstruction = { parts: [{ text: `Você é um especialista em copywriting para e-commerce. Sua tarefa é criar três títulos distintos e uma descrição de vendas para produtos, em português do Brasil. As saídas devem ser: 1. 'tituloSistema': um título curto, em caixa alta, para uso interno em sistemas. 2. 'tituloMarketplace': um título otimizado para SEO com no máximo 60 caracteres, ideal para marketplaces. 3. 'tituloOtimizado': um título completo e detalhado para e-commerce próprio. 4. 'descricaoVenda': uma descrição dividida em "textoDescricao" (parágrafo de venda), "caracteristicas" (lista de destaques) e "especificacoes" (lista de detalhes técnicos). O resultado deve ser um JSON válido com a seguinte estrutura: {"tituloSistema": "...", "tituloMarketplace": "...", "tituloOtimizado": "...", "descricaoVenda": {"textoDescricao": "...", "caracteristicas": ["..."], "especificacoes": ["..."]}}` }] };
                 const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction, generationConfig: { responseMimeType: "application/json" } };
 
                 try {
@@ -940,6 +1217,7 @@
                     renderTemplates();
                     elements.templateCategoryInput.value = '';
                     elements.templateTitleInput.value = '';
+                    showToastNotification('Modelo salvo com sucesso!', 'success');
                 } else {
                     showToastNotification('Por favor, preencha a categoria e o título do modelo.', 'error');
                 }
@@ -954,9 +1232,35 @@
                 }
             });
 
-            const fetchTitleSuggestion = async (templateList, productDescription) => {
-                const systemPrompt = `Você é um assistente de e-commerce especialista em padronização de títulos de produtos. Sua tarefa é usar uma lista de modelos para formatar o título de um novo produto. Siga estas regras estritamente: 1. Analise a 'Descrição do Novo Produto'. 2. Compare a descrição com a 'Lista de Modelos Disponíveis' e encontre o modelo cuja categoria melhor corresponde ao novo produto. 3. Use o modelo escolhido como um guia exato para formatar um novo título. 4. Extraia todos os detalhes relevantes da descrição (marca, modelo, especificações como MP, MM, IR, etc.) e insira-os no novo título, mantendo a estrutura, ordem, capitalização e simbologia (hífens, sinais de mais) do modelo. 5. Responda APENAS com a string do título finalizado. Não inclua nenhuma outra palavra ou explicação.`;
-                const userPrompt = `**Lista de Modelos Disponíveis:**\n${JSON.stringify(templateList, null, 2)}\n\n**Descrição do Novo Produto:**\n"${productDescription}"`;
+            const fetchTitleSuggestion = async (method, productDescription) => {
+                 let systemPrompt = '';
+                 let userPrompt = '';
+
+                if (method === 'logic') {
+                    const logicStructure = elements.logicStructureInput.value.trim();
+                    if (!logicStructure) {
+                        showToastNotification('Por favor, defina uma Estrutura Lógica.', 'error');
+                        throw new Error('Estrutura Lógica não definida.');
+                    }
+                    systemPrompt = `Você é um assistente de e-commerce especialista em padronização de títulos de produtos. Sua tarefa é usar uma 'Estrutura Lógica' fornecida para formatar o título de um novo produto com base em sua descrição.
+
+Siga estas regras DE FORMA ESTRITA E OBRIGATÓRIA:
+1.  **Analisar a Descrição:** Leia a 'Descrição do Produto' para extrair as informações.
+2.  **Seguir a Estrutura:** A 'Estrutura Lógica' (ex: "Produto, Marca, Modelo, Especificação") define a ORDEM EXATA e os componentes do título final.
+3.  **Mapear e Preencher:** Para cada item na 'Estrutura Lógica' (ex: "Produto"), encontre a informação correspondente na 'Descrição do Produto' e use-a para construir o título.
+4.  **Manter a Ordem:** O título final DEVE seguir a mesma sequência de componentes da 'Estrutura Lógica'. NÃO altere a ordem.
+5.  **Omitir o Ausente:** Se uma informação para um componente da estrutura (ex: "Cor") não for encontrada na descrição, simplesmente omita esse componente do título final, mantendo a ordem dos demais.
+6.  **Resposta Final:** Sua resposta DEVE ser APENAS a string do título finalizado. Não inclua NENHUMA palavra, explicação, ou aspas extras. Apenas o título.`;
+                    userPrompt = `**Estrutura Lógica:**\n"${logicStructure}"\n\n**Descrição do Produto:**\n"${productDescription}"`;
+                } else { // method === 'models'
+                    if (templates.length === 0) {
+                        showToastNotification('Por favor, adicione pelo menos um Modelo por Categoria.', 'error');
+                         throw new Error('Nenhum modelo salvo.');
+                    }
+                    systemPrompt = `Você é um assistente de e-commerce especialista em padronização de títulos. Sua tarefa é usar uma lista de modelos para formatar o título de um produto. Regras: 1. Analise a 'Descrição do Produto'. 2. Compare-a com a 'Lista de Modelos' e encontre o modelo da categoria que melhor corresponde. 3. Use o modelo escolhido como um guia exato para formatar o novo título, extraindo os detalhes relevantes da descrição e mantendo a estrutura, ordem e capitalização do modelo. 4. Responda APENAS com a string do título final.`;
+                    userPrompt = `**Lista de Modelos:**\n${JSON.stringify(templates, null, 2)}\n\n**Descrição do Produto:**\n"${productDescription}"`;
+                }
+
                 const payload = {
                     systemInstruction: { parts: [{ text: systemPrompt }] },
                     contents: [{ parts: [{ text: userPrompt }] }],
@@ -966,7 +1270,6 @@
 
             elements.generateBtn.addEventListener('click', async () => {
                 const description = elements.newProductDescriptionInput.value.trim();
-                if (templates.length === 0) return showToastNotification('Por favor, adicione pelo menos um modelo.', 'error');
                 if (!description) return showToastNotification('Por favor, descreva o novo produto.', 'error');
 
                 setLoading(true, elements.generateBtn, elements.btnText, elements.loader);
@@ -976,7 +1279,7 @@
                 elements.copyBtn.classList.add('hidden');
                 
                 try {
-                    const suggestion = await fetchTitleSuggestion(templates, description);
+                    const suggestion = await fetchTitleSuggestion(manualAiMethod, description);
                     if (suggestion && typeof suggestion === 'string') {
                         elements.suggestionOutput.textContent = suggestion;
                         elements.copyBtn.classList.remove('hidden');
@@ -985,7 +1288,7 @@
                     }
                 } catch (error) {
                     console.error('Erro ao buscar sugestão:', error);
-                    elements.errorMessage.textContent = 'Ocorreu um erro ao gerar o título.';
+                    elements.errorMessage.textContent = `Erro: ${error.message}`;
                 } finally {
                     setLoading(false, elements.generateBtn, elements.btnText, elements.loader);
                 }
@@ -1012,8 +1315,7 @@
 
                 if (!file) return showToastNotification('Por favor, selecione um arquivo.', 'error');
                 if (!titleColumn) return showToastNotification('Por favor, especifique o nome da coluna de títulos.', 'error');
-                if (templates.length === 0) return showToastNotification('Adicione pelo menos um modelo antes de processar.', 'error');
-
+                
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     try {
@@ -1060,7 +1362,7 @@
 
                     if (originalTitle) {
                         try {
-                            const correctedTitle = await fetchTitleSuggestion(templates, originalTitle);
+                            const correctedTitle = await fetchTitleSuggestion(batchAiMethod, originalTitle);
                             const newRow = { ...row };
                             newRow[titleColumn] = correctedTitle;
                             correctedSheetData.push(newRow);
@@ -1069,7 +1371,7 @@
                             tableRow.innerHTML = `<td>${originalTitle}</td><td>${correctedTitle || 'Falha'}</td>`;
                             elements.resultsTableBody.appendChild(tableRow);
                         } catch (error) {
-                            console.error(`Erro na linha ${i+1}:`, error);
+                            console.error(`Erro na linha ${i+1}:`, error.message);
                             const newRow = { ...row };
                             newRow[titleColumn] = `ERRO: ${originalTitle}`;
                             correctedSheetData.push(newRow);
@@ -1118,14 +1420,55 @@
                 document.body.removeChild(link);
             });
 
+             // --- AI METHOD SELECTION ---
+            const setAiMethod = (tool, method) => {
+                if (tool === 'manual') {
+                    manualAiMethod = method;
+                    elements.manualUseLogicBtn.classList.toggle('active', method === 'logic');
+                    elements.manualUseModelsBtn.classList.toggle('active', method === 'models');
+                } else { // batch
+                    batchAiMethod = method;
+                    elements.batchUseLogicBtn.classList.toggle('active', method === 'logic');
+                    elements.batchUseModelsBtn.classList.toggle('active', method === 'models');
+                }
+            };
+
+            elements.manualUseLogicBtn.addEventListener('click', () => setAiMethod('manual', 'logic'));
+            elements.manualUseModelsBtn.addEventListener('click', () => setAiMethod('manual', 'models'));
+            elements.batchUseLogicBtn.addEventListener('click', () => setAiMethod('batch', 'logic'));
+            elements.batchUseModelsBtn.addEventListener('click', () => setAiMethod('batch', 'models'));
+
+            // --- PERSIST LOGIC STRUCTURE ---
+            const saveLogicStructure = () => {
+                localStorage.setItem('logicStructure', elements.logicStructureInput.value);
+                const statusEl = elements.logicStructureStatus;
+                statusEl.classList.remove('opacity-0');
+                if (logicSaveTimeout) clearTimeout(logicSaveTimeout);
+                logicSaveTimeout = setTimeout(() => {
+                    statusEl.classList.add('opacity-0');
+                }, 1500);
+            };
+            const loadLogicStructure = () => {
+                const savedStructure = localStorage.getItem('logicStructure');
+                if (savedStructure) {
+                    elements.logicStructureInput.value = savedStructure;
+                }
+            };
+            elements.logicStructureInput.addEventListener('input', saveLogicStructure);
+
             // Initialize all parts
+            applyInitialSidebarState();
+            setActiveTool('productSearch');
+            setActiveView(currentView);
+            setAiMethod('manual', 'models'); // Default
+            setAiMethod('batch', 'models'); // Default
             updateDatabaseSummaryUI();
             updateFileListView();
             loadTemplates();
+            loadLogicStructure();
             elements.searchInput.addEventListener('input', searchProducts);
         });
     </script>
 </body>
 </html>
-
 
