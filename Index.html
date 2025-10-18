@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Produtos</title>
+    <title>Buscador de Produtos e Ferramenta de Títulos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -18,15 +18,15 @@
         body { font-family: 'Inter', sans-serif; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
-        .dark ::-webkit-scrollbar-track { background: #2d3748; }
+        .dark ::-webkit-scrollbar-track { background: #1f2937; }
         ::-webkit-scrollbar-thumb { background: #a0aec0; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #718096; }
         .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); }
         #searchInput { padding-left: 48px; }
-        .file-upload-wrapper { transition: background-color 0.2s; }
-        #fileInput { display: none; }
-        #settingsModal { transition: opacity 0.3s ease; }
-        .spinner {
+        .file-upload-wrapper { transition: background-color 0.2s, border-color 0.2s; }
+        #fileInput, #csv-file-input { display: none; }
+        .modal { transition: opacity 0.3s ease; }
+        .spinner, .loader {
             border: 2px solid #f3f3f3; 
             border-top: 2px solid #3498db;
             border-radius: 50%;
@@ -38,11 +38,18 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+         .table-auto th, .table-auto td {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #e5e7eb;
+        }
+        .dark .table-auto th, .dark .table-auto td {
+            border-color: #374151;
+        }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-slate-900 transition-colors duration-300">
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
 
-    <header class="bg-white dark:bg-slate-800 shadow-md sticky top-0 z-20 transition-colors duration-300">
+    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20 transition-colors duration-300">
         <div class="container mx-auto p-4 flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Buscador de Produtos</h1>
             <div class="flex items-center space-x-4">
@@ -50,7 +57,10 @@
                     <i id="theme-toggle-dark-icon" class="fas fa-moon hidden w-5 h-5"></i>
                     <i id="theme-toggle-light-icon" class="fas fa-sun hidden w-5 h-5"></i>
                 </button>
-                <button id="settingsButton" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors text-2xl">
+                 <button id="titleToolButton" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors text-2xl" title="Ferramenta de Padrões de Título">
+                    <i class="fas fa-magic"></i>
+                </button>
+                <button id="settingsButton" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors text-2xl" title="Configurações do Buscador">
                     <i class="fas fa-cog"></i>
                 </button>
             </div>
@@ -59,90 +69,167 @@
 
     <div class="container mx-auto p-4 md:p-8">
         
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md mb-8 max-w-7xl mx-auto transition-colors duration-300">
-             <div class="mb-4">
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Resumo da Base de Dados:</h3>
-                <div id="databaseSummary" class="mt-2"></div>
-            </div>
-            <div class="relative">
-                <i class="fas fa-search search-icon text-gray-400"></i>
-                <input type="text" id="searchInput" placeholder="Buscar em todas as abas por qualquer informação do produto..."
-                       class="w-full p-4 border border-gray-300 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-gray-400">
+        <div class="text-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-slate-900 p-8 md:p-12 rounded-xl shadow-lg mb-8 max-w-7xl mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4">Encontre e Otimize Seus Produtos</h2>
+            <p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
+                Carregue suas planilhas, pesquise instantaneamente e use a IA para criar títulos e descrições de venda perfeitos.
+            </p>
+            <div class="bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl shadow-inner max-w-4xl mx-auto backdrop-blur-sm">
+                 <div class="mb-4 text-left">
+                     <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Resumo da Base de Dados:</h3>
+                     <div id="databaseSummary" class="mt-1"></div>
+                 </div>
+                <div class="relative">
+                    <i class="fas fa-search search-icon text-gray-400"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar por código, modelo, descrição..."
+                           class="w-full p-4 border border-gray-300 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
+                </div>
             </div>
         </div>
 
-        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-7 gap-8">
-            <main id="resultsContainer" class="lg:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-6"></main>
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <main id="resultsContainer" class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6"></main>
 
-            <aside id="aiPanel" class="lg:col-span-3 lg:sticky top-28 h-fit hidden">
-                 <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 flex items-center"><i class="fas fa-robot text-blue-500 mr-3"></i>Assistente de Vendas IA</h2>
-                    
-                    <div id="aiContent">
-                        <!-- Conteúdo da IA será inserido aqui -->
-                    </div>
-                    
-                    <div id="aiPlaceholder" class="text-center text-gray-500 dark:text-gray-400 py-10">
-                        <i class="fas fa-mouse-pointer fa-2x mb-3"></i>
-                        <p>Clique em um produto para gerar o título e a descrição de venda.</p>
-                    </div>
-
+            <aside id="aiPanel" class="lg:col-span-4 lg:sticky top-28 h-fit hidden">
+                 <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                     <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 flex items-center"><i class="fas fa-robot text-blue-500 mr-3"></i>Assistente de Vendas IA</h2>
+                     <div id="aiContent"></div>
+                     <div id="aiPlaceholder" class="text-center text-gray-500 dark:text-gray-400 py-10">
+                         <i class="fas fa-mouse-pointer fa-3x mb-4"></i>
+                         <p class="text-lg">Clique em um produto para gerar o título e a descrição de venda.</p>
+                     </div>
                  </div>
             </aside>
         </div>
 
-        <div id="noResults" class="hidden text-center text-gray-500 dark:text-gray-400 mt-12">
-            <i class="fas fa-box-open fa-3x mb-4"></i>
-            <p class="text-xl">Nenhum produto encontrado.</p>
-            <p>Tente ajustar seus termos de busca ou carregue uma nova planilha.</p>
+        <div id="noResults" class="hidden text-center text-gray-500 dark:text-gray-400 mt-16">
+            <i class="fas fa-box-open fa-4x mb-4"></i>
+            <p class="text-2xl font-semibold">Nenhum produto encontrado.</p>
         </div>
         
-        <div id="initialState" class="text-center text-gray-500 dark:text-gray-400 mt-12">
-            <i class="fas fa-database fa-3x mb-4"></i>
-            <p class="text-xl">Nenhuma planilha carregada.</p>
-            <p>Clique na engrenagem <i class="fas fa-cog"></i> para carregar suas planilhas.</p>
+        <div id="initialState" class="text-center text-gray-500 dark:text-gray-400 mt-16">
+            <div class="max-w-md mx-auto bg-white dark:bg-gray-800 p-10 rounded-xl shadow-md border dark:border-gray-700">
+                <i class="fas fa-database fa-4x mb-4 text-gray-400"></i>
+                <p class="text-2xl font-semibold">Nenhuma planilha carregada.</p>
+                <p class="mt-2">Clique na engrenagem <i class="fas fa-cog"></i> no canto superior para carregar seus arquivos.</p>
+            </div>
         </div>
     </div>
 
-    <!-- Modal de Configurações/Upload -->
-    <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div id="modalContent" class="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-xl max-w-2xl w-full relative transform transition-all duration-300 scale-95 opacity-0">
+    <!-- Modal de Configurações do Buscador -->
+    <div id="settingsModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div id="modalContent" class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-2xl w-full relative transform transition-all duration-300 scale-95 opacity-0 overflow-y-auto max-h-[90vh]">
             <button id="closeModalButton" class="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white text-3xl">&times;</button>
-            <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-6 text-center">Configurações</h2>
+            <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-6 text-center">Configurações do Buscador</h2>
             
-            <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Gerenciar Arquivos Carregados</h3>
-                <div id="fileManagementList" class="space-y-2 max-h-48 overflow-y-auto bg-gray-50 dark:bg-slate-900 p-3 rounded-lg border dark:border-slate-700"></div>
-                <button id="removeAllButton" class="mt-4 w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:bg-red-300">
-                    <i class="fas fa-trash-alt mr-2"></i> Remover Todos os Arquivos
-                </button>
-            </div>
-            
-            <hr class="my-6 border-gray-200 dark:border-gray-700">
-
             <div>
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Adicionar Novos Arquivos</h3>
-                <div id="fileStagingArea" class="mb-4 p-4 bg-gray-50 dark:bg-slate-900 rounded-lg max-h-40 overflow-y-auto border dark:border-slate-700"></div>
-                <label for="fileInput" class="file-upload-wrapper border-gray-300 dark:border-gray-600 dark:hover:bg-slate-700">
-                    <i class="fas fa-plus-circle fa-2x text-gray-400 mb-2"></i>
-                    <p class="text-gray-600 dark:text-gray-300">Clique para adicionar planilhas</p>
-                </label>
-                <input type="file" id="fileInput" accept=".csv, .xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple>
-                <button id="loadFileButton" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:bg-gray-400">
-                    <i class="fas fa-cloud-upload-alt mr-2"></i> Carregar Dados
-                </button>
-                <p id="statusMessage" class="text-center mt-3 text-sm font-semibold"></p>
+                <div class="mt-6">
+                    <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Gerenciar Arquivos Carregados</h4>
+                    <div id="fileManagementList" class="space-y-2 max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700"></div>
+                    <button id="removeAllButton" class="mt-4 w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:bg-red-300">
+                        <i class="fas fa-trash-alt mr-2"></i> Remover Todos os Arquivos
+                    </button>
+                </div>
+                <hr class="my-6 border-gray-200 dark:border-gray-700">
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Adicionar Novos Arquivos</h4>
+                    <div id="fileStagingArea" class="mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg max-h-40 overflow-y-auto border dark:border-gray-700"></div>
+                    <label for="fileInput" class="file-upload-wrapper flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-gray-400 mb-3"></i>
+                        <p class="text-gray-600 dark:text-gray-300 text-center"><span class="font-semibold">Clique para selecionar</span> ou arraste e solte planilhas</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">.XLSX, .XLS, or .CSV</p>
+                    </label>
+                    <input type="file" id="fileInput" accept=".csv, .xls, .xlsx" multiple>
+                    <button id="loadFileButton" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:bg-gray-400">
+                        <i class="fas fa-sync-alt mr-2"></i> Carregar e Processar Dados
+                    </button>
+                    <p id="statusMessage" class="text-center mt-3 text-sm font-semibold"></p>
+                </div>
             </div>
         </div>
     </div>
+    
+    <!-- Modal da Ferramenta de Títulos -->
+    <div id="titleToolModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div id="titleToolModalContent" class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-2xl w-full relative transform transition-all duration-300 scale-95 opacity-0 overflow-y-auto max-h-[90vh]">
+            <button id="closeTitleToolModalButton" class="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white text-3xl">&times;</button>
+            <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-6 text-center">Ferramenta de Padrões de Título com IA</h2>
+            
+            <div class="space-y-8">
+                 <!-- Step 1: Manage Templates -->
+                 <div>
+                     <h4 class="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-200">1. Gerenciar Modelos</h4>
+                     <input type="text" id="template-category" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2" placeholder="Categoria do Modelo">
+                     <textarea id="template-title" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2" rows="2" placeholder="Título do Modelo (Ex: PRODUTO MARCA MODELO)"></textarea>
+                     <button id="add-template-btn" class="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Salvar Modelo</button>
+                     <div id="templates-list" class="mt-4 space-y-2 max-h-40 overflow-y-auto pr-2"></div>
+                 </div>
+                 
+                 <!-- Step 2: Manual Generation -->
+                 <div>
+                     <h4 class="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-200">2. Gerar Novo Título (Manual)</h4>
+                     <textarea id="new-product-description" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" rows="3" placeholder="Cole a descrição do novo produto aqui..."></textarea>
+                     <button id="generate-btn" class="w-full mt-2 py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 flex justify-center items-center">
+                         <span id="btn-text">Gerar Título</span>
+                         <div id="loader" class="loader hidden"></div>
+                     </button>
+                     <div id="results-card" class="hidden mt-2">
+                         <div id="suggestion-output" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-800 dark:text-gray-100"></div>
+                         <button id="copy-btn" class="hidden w-full mt-2 py-2 px-4 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">Copiar Título</button>
+                         <div id="error-message" class="text-center text-red-500 mt-2"></div>
+                     </div>
+                 </div>
+                 
+                 <!-- Step 3: Batch Correction -->
+                 <div>
+                     <h4 class="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-200">3. Correção de Planilhas em Lote</h4>
+                     <input type="text" id="title-column-name" class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2" placeholder="Nome da Coluna com Títulos (Ex: Titulo)">
+                     <label for="csv-file-input" class="file-upload-wrapper block border-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 cursor-pointer p-4 rounded-lg border-2 border-dashed text-center">
+                        <i class="fas fa-file-import fa-2x text-gray-400 mb-2"></i>
+                        <p id="batch-file-name" class="text-gray-600 dark:text-gray-300 text-sm">Clique para selecionar planilha</p>
+                     </label>
+                     <input type="file" id="csv-file-input" accept=".csv,.xlsx,.xls">
+                     <div class="mt-4 flex space-x-2">
+                        <button id="process-sheet-btn" class="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700">Processar</button>
+                        <button id="stop-process-btn" class="w-full py-2 px-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 hidden">Parar</button>
+                     </div>
+                     <div id="batch-results-section" class="hidden mt-4">
+                        <p id="progress-indicator" class="text-sm text-gray-600 dark:text-gray-400 mb-2"></p>
+                        <div class="max-h-60 overflow-y-auto">
+                            <table class="w-full text-sm text-left table-auto">
+                                <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                                    <tr>
+                                        <th class="w-1/2">Título Original</th>
+                                        <th class="w-1/2">Título Corrigido (IA)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-table-body"></tbody>
+                            </table>
+                        </div>
+                        <div class="flex space-x-2 mt-2">
+                            <button id="download-csv-btn" class="w-full py-2 px-3 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700">Baixar .csv</button>
+                            <button id="download-xlsx-btn" class="w-full py-2 px-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">Baixar .xlsx</button>
+                        </div>
+                     </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
 
     <script>
+        // --- STATE MANAGEMENT ---
         let fileDatabase = {};
         let filesToUpload = [];
         let currentSearchResults = [];
+        let templates = [];
+        let correctedSheetData = [];
+        let stopProcessing = false;
 
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM ELEMENTS ---
             const elements = {
+                // Main UI
                 themeToggleBtn: document.getElementById('theme-toggle'),
                 themeToggleDarkIcon: document.getElementById('theme-toggle-dark-icon'),
                 themeToggleLightIcon: document.getElementById('theme-toggle-light-icon'),
@@ -150,22 +237,54 @@
                 resultsContainer: document.getElementById('resultsContainer'),
                 noResults: document.getElementById('noResults'),
                 initialState: document.getElementById('initialState'),
-                fileInput: document.getElementById('fileInput'),
-                loadFileButton: document.getElementById('loadFileButton'),
-                statusMessage: document.getElementById('statusMessage'),
                 databaseSummaryContainer: document.getElementById('databaseSummary'),
-                fileStagingArea: document.getElementById('fileStagingArea'),
-                fileManagementList: document.getElementById('fileManagementList'),
-                removeAllButton: document.getElementById('removeAllButton'),
+                aiPanel: document.getElementById('aiPanel'),
+                aiContent: document.getElementById('aiContent'),
+                aiPlaceholder: document.getElementById('aiPlaceholder'),
+                // Settings Modal
                 settingsButton: document.getElementById('settingsButton'),
                 closeModalButton: document.getElementById('closeModalButton'),
                 settingsModal: document.getElementById('settingsModal'),
                 modalContent: document.getElementById('modalContent'),
-                aiPanel: document.getElementById('aiPanel'),
-                aiContent: document.getElementById('aiContent'),
-                aiPlaceholder: document.getElementById('aiPlaceholder'),
+                 // Title Tool Modal
+                titleToolButton: document.getElementById('titleToolButton'),
+                titleToolModal: document.getElementById('titleToolModal'),
+                titleToolModalContent: document.getElementById('titleToolModalContent'),
+                closeTitleToolModalButton: document.getElementById('closeTitleToolModalButton'),
+                // File Searcher
+                fileInput: document.getElementById('fileInput'),
+                fileUploadWrapper: document.querySelector('.file-upload-wrapper'),
+                loadFileButton: document.getElementById('loadFileButton'),
+                statusMessage: document.getElementById('statusMessage'),
+                fileStagingArea: document.getElementById('fileStagingArea'),
+                fileManagementList: document.getElementById('fileManagementList'),
+                removeAllButton: document.getElementById('removeAllButton'),
+                // Title Tool
+                templateCategoryInput: document.getElementById('template-category'),
+                templateTitleInput: document.getElementById('template-title'),
+                addTemplateBtn: document.getElementById('add-template-btn'),
+                templatesListContainer: document.getElementById('templates-list'),
+                newProductDescriptionInput: document.getElementById('new-product-description'),
+                generateBtn: document.getElementById('generate-btn'),
+                resultsCard: document.getElementById('results-card'),
+                suggestionOutput: document.getElementById('suggestion-output'),
+                copyBtn: document.getElementById('copy-btn'),
+                errorMessage: document.getElementById('error-message'),
+                btnText: document.getElementById('btn-text'),
+                loader: document.getElementById('loader'),
+                csvFileInput: document.getElementById('csv-file-input'),
+                titleColumnNameInput: document.getElementById('title-column-name'),
+                processSheetBtn: document.getElementById('process-sheet-btn'),
+                stopProcessBtn: document.getElementById('stop-process-btn'),
+                batchResultsSection: document.getElementById('batch-results-section'),
+                progressIndicator: document.getElementById('progress-indicator'),
+                resultsTableBody: document.getElementById('results-table-body'),
+                downloadCsvBtn: document.getElementById('download-csv-btn'),
+                downloadXlsxBtn: document.getElementById('download-xlsx-btn'),
+                batchFileName: document.getElementById('batch-file-name'),
             };
 
+            // --- THEME MANAGEMENT ---
             function applyTheme(theme) {
                 if (theme === 'dark') {
                     document.documentElement.classList.add('dark');
@@ -177,16 +296,15 @@
                     elements.themeToggleLightIcon.classList.add('hidden');
                 }
             }
-
             const savedTheme = localStorage.getItem('color-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             applyTheme(savedTheme);
-
             elements.themeToggleBtn.addEventListener('click', () => {
                 const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
                 localStorage.setItem('color-theme', newTheme);
                 applyTheme(newTheme);
             });
 
+            // --- MODAL MANAGEMENT ---
             const openModal = () => {
                 updateFileManagementUI();
                 elements.settingsModal.classList.remove('hidden');
@@ -199,7 +317,102 @@
             elements.settingsButton.addEventListener('click', openModal);
             elements.closeModalButton.addEventListener('click', closeModal);
             elements.settingsModal.addEventListener('click', (e) => e.target === elements.settingsModal && closeModal());
+            
+            // --- Title Tool Modal Management ---
+            const openTitleToolModal = () => {
+                elements.titleToolModal.classList.remove('hidden');
+                setTimeout(() => elements.titleToolModalContent.classList.remove('scale-95', 'opacity-0'), 10);
+            };
+            const closeTitleToolModal = () => {
+                elements.titleToolModalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => elements.titleToolModal.classList.add('hidden'), 300);
+            };
+            elements.titleToolButton.addEventListener('click', openTitleToolModal);
+            elements.closeTitleToolModalButton.addEventListener('click', closeTitleToolModal);
+            elements.titleToolModal.addEventListener('click', (e) => e.target === elements.titleToolModal && closeTitleToolModal());
 
+            // --- SHARED UTILITY FUNCTIONS ---
+            const setLoading = (isLoading, button, textEl, loaderEl) => {
+                if(button) button.disabled = isLoading;
+                if (isLoading) {
+                    if(textEl) textEl.classList.add('hidden');
+                    if(loaderEl) loaderEl.classList.remove('hidden');
+                } else {
+                    if(textEl) textEl.classList.remove('hidden');
+                    if(loaderEl) loaderEl.classList.add('hidden');
+                }
+            };
+
+            const showToastNotification = (message, type = 'info') => {
+                const toast = document.createElement('div');
+                const colors = {
+                    error: 'bg-red-500',
+                    success: 'bg-green-500',
+                    info: 'bg-blue-500'
+                };
+                
+                toast.className = `fixed top-5 right-5 text-white p-4 rounded-lg shadow-lg text-sm z-[100] transform translate-x-[120%] transition-transform duration-300 ${colors[type] || colors.info}`;
+                toast.textContent = message;
+
+                document.body.appendChild(toast);
+                
+                setTimeout(() => toast.classList.remove('translate-x-[120%]'), 10);
+                
+                setTimeout(() => {
+                    toast.classList.add('translate-x-[120%]');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            };
+
+            // --- UNIFIED GEMINI API CALLER ---
+            const callGenerativeApi = async (payload) => {
+                const apiKey = "AIzaSyD26PBvpBwYhm1wMNx6ZaZxDkCWJmUu3SI"; 
+                const model = 'gemini-2.5-flash-preview-09-2025';
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                
+                let retries = 3;
+                let delay = 1000;
+
+                while (retries > 0) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                            if (response.status === 429 || response.status >= 500) {
+                                console.warn(`API Error ${response.status}. Retrying in ${delay / 1000}s...`);
+                                throw new Error(`HTTP error ${response.status}`);
+                            }
+                            const errorBody = await response.text();
+                            throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
+                        }
+
+                        const result = await response.json();
+                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                        if (text) {
+                            try { return JSON.parse(text); } 
+                            catch (e) { return text; }
+                        } else {
+                             const reason = result.candidates?.[0]?.finishReason;
+                             console.error("API call succeeded but returned no content. Reason:", reason, result);
+                             throw new Error(`API returned no content. Finish reason: ${reason}`);
+                        }
+
+                    } catch (error) {
+                        console.error(`API call attempt failed: ${error.message}`);
+                        retries--;
+                        if (retries === 0) throw new Error("Falha ao chamar a API após várias tentativas.");
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2; // Exponential backoff
+                    }
+                }
+            };
+
+            // --- BUSCADOR DE PRODUTOS: FUNCTIONS ---
             const hideCard = (cardId) => {
                 const cardElement = document.getElementById(cardId);
                 if (cardElement) {
@@ -209,8 +422,8 @@
                     setTimeout(() => {
                         cardElement.remove();
                         if (elements.resultsContainer.children.length === 0 && elements.searchInput.value.trim() !== '') {
-                           elements.noResults.style.display = 'block';
-                           elements.aiPanel.classList.add('hidden');
+                            elements.noResults.style.display = 'block';
+                            elements.aiPanel.classList.add('hidden');
                         }
                     }, 300);
                 }
@@ -277,7 +490,7 @@
                     elements.initialState.style.display = 'none';
                     elements.databaseSummaryContainer.innerHTML = `
                         <p class="text-gray-700 dark:text-gray-300">
-                            <span class="font-bold text-blue-600 dark:text-blue-400">${totalFiles}</span> arquivo(s) na base de dados, com um total de 
+                            <span class="font-bold text-blue-600 dark:text-blue-400">${totalFiles}</span> arquivo(s), com um total de 
                             <span class="font-bold text-blue-600 dark:text-blue-400">${totalProducts}</span> produtos.
                         </p>`;
                 }
@@ -317,26 +530,41 @@
                 }
             };
             
-            elements.fileInput.addEventListener('change', (event) => {
-                const newFiles = Array.from(event.target.files);
+            const addFilesToStaging = (fileList) => {
+                const newFiles = Array.from(fileList);
                 newFiles.forEach(newFile => {
                     if (!filesToUpload.some(existingFile => existingFile.name === newFile.name && existingFile.size === newFile.size)) {
                         filesToUpload.push(newFile);
                     }
                 });
-                event.target.value = ''; 
+                elements.fileInput.value = ''; 
                 updateFileListView();
+            };
+
+            elements.fileInput.addEventListener('change', (event) => addFilesToStaging(event.target.files));
+
+            const { fileUploadWrapper } = elements;
+            fileUploadWrapper.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUploadWrapper.classList.add('bg-blue-50', 'dark:bg-blue-900/50', 'border-blue-500');
+            });
+            fileUploadWrapper.addEventListener('dragleave', () => {
+                fileUploadWrapper.classList.remove('bg-blue-50', 'dark:bg-blue-900/50', 'border-blue-500');
+            });
+            fileUploadWrapper.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUploadWrapper.classList.remove('bg-blue-50', 'dark:bg-blue-900/50', 'border-blue-500');
+                addFilesToStaging(e.dataTransfer.files);
             });
             
             const processSheetData = (dataAsArrayOfArrays, sheetName) => {
                 const idKeywords = ['part number', 'partnumber', 'modelo', 'model', 'código', 'cod.', 'item'];
-
                 let headerRowIndex = -1;
                 for (let i = 0; i < Math.min(dataAsArrayOfArrays.length, 20); i++) {
                     if (!Array.isArray(dataAsArrayOfArrays[i])) continue;
                     const row = dataAsArrayOfArrays[i].map(h => String(h || '').toLowerCase().trim());
                     const hasId = row.some(cell => idKeywords.some(kw => cell.includes(kw)));
-                    if (hasId && row.filter(c => c).length > 1) { // Header has ID and at least one other column
+                    if (hasId && row.filter(c => c).length > 1) {
                         headerRowIndex = i;
                         break;
                     }
@@ -362,17 +590,17 @@
                         const headerName = String(header || '').trim();
                         const cellValue = rowData[index];
                          if (headerName !== '' && cellValue !== undefined && cellValue !== null && String(cellValue).trim() !== '') {
-                            currentRow[headerName] = cellValue;
-                        }
+                             currentRow[headerName] = cellValue;
+                         }
                     });
 
                     const hasIdInRow = rowData[idColumnIndex] !== undefined && String(rowData[idColumnIndex]).trim() !== '';
-
-                    if (!hasIdInRow) {
-                        sharedData = { ...sharedData, ...currentRow };
-                    } else {
+                    
+                    if (hasIdInRow) {
                         const newProduct = { ...sharedData, ...currentRow };
                         mappedData.push(newProduct);
+                    } else if (Object.keys(currentRow).length > 0) {
+                        sharedData = { ...sharedData, ...currentRow };
                     }
                 }
                 
@@ -429,7 +657,7 @@
                 Promise.all(Array.from(files).map(processSingleFile)).then(handleProcessResult);
             };
             
-            loadFileButton.addEventListener('click', () => handleFiles(filesToUpload));
+            elements.loadFileButton.addEventListener('click', () => handleFiles(filesToUpload));
 
             const handleProcessResult = (results) => {
                 let successCount = 0;
@@ -558,33 +786,19 @@
             
             const copyToClipboard = (elementId, button) => {
                 const text = document.getElementById(elementId).innerText;
+                if (!text || button.disabled) return;
                 navigator.clipboard.writeText(text).then(() => {
                     const originalIcon = button.innerHTML;
-                    button.innerHTML = '<i class="fas fa-check text-green-500"></i>';
-                    setTimeout(() => { button.innerHTML = originalIcon; }, 1500);
+                    const originalClasses = button.className;
+                    button.innerHTML = '<i class="fas fa-check"></i>';
+                    button.classList.add('text-green-500');
+                    button.disabled = true;
+                    setTimeout(() => {
+                        button.innerHTML = originalIcon;
+                        button.className = originalClasses;
+                        button.disabled = false;
+                    }, 1500);
                 });
-            };
-
-            const callGeminiAPI = async (prompt) => {
-                const apiKey = "AIzaSyD26PBvpBwYhm1wMNx6ZaZxDkCWJmUu3SI";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-                const systemInstruction = { parts: [{ text: `Você é um especialista em copywriting para e-commerce. Sua tarefa é criar um título e uma descrição de vendas para produtos, em português do Brasil. O título deve seguir o formato: "Produto, Marca, Modelo, especificação e material". A descrição deve ser dividida em três partes: "Texto de descrição" (um parágrafo de venda), "Características do produto" (uma lista de destaques), e "Especificações" (uma lista de detalhes técnicos). O resultado deve ser um JSON válido com a seguinte estrutura: {"tituloOtimizado": "seu título", "descricaoVenda": {"textoDescricao": "seu parágrafo", "caracteristicas": ["item 1", "item 2"], "especificacoes": ["item 1", "item 2"]}}. ` }] };
-                const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction, generationConfig: { responseMimeType: "application/json" } };
-                let retries = 3;
-                while (retries > 0) {
-                    try {
-                        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                        const result = await response.json();
-                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if (text) return JSON.parse(text);
-                    } catch (error) {
-                        retries--;
-                        if (retries === 0) throw error;
-                        await new Promise(res => setTimeout(res, 1000 * (3 - retries)));
-                    }
-                }
-                throw new Error("Falha ao chamar a API após várias tentativas.");
             };
 
             const showAiPanel = async (index) => {
@@ -595,32 +809,75 @@
                 elements.aiContent.innerHTML = `
                     <div class="space-y-4">
                         <div>
-                            <div class="flex justify-between items-center"><h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Título Otimizado</h3><button data-copy-target="aiOptimizedTitle" class="text-gray-400 hover:text-blue-500" title="Copiar"><i class="far fa-copy"></i></button></div>
-                            <div id="aiOptimizedTitle" class="mt-2 p-3 bg-gray-100 dark:bg-slate-700 rounded-md text-gray-800 dark:text-gray-100 animate-pulse h-8"></div>
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-md font-semibold text-gray-700 dark:text-gray-200">Título p/ Sistema (Curto)</h3>
+                                <button data-copy-target="aiSystemTitle" class="copy-ai-btn text-gray-400 hover:text-blue-500 transition-colors" title="Copiar">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </div>
+                            <div id="aiSystemTitle" class="mt-1 p-3 bg-gray-100 dark:bg-slate-700 rounded-md text-gray-800 dark:text-gray-100 animate-pulse h-8"></div>
                         </div>
                         <div>
-                             <div class="flex justify-between items-center"><h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Descrição de Venda</h3><button data-copy-target="aiSalesDescription" class="text-gray-400 hover:text-blue-500" title="Copiar"><i class="far fa-copy"></i></button></div>
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-md font-semibold text-gray-700 dark:text-gray-200">Título p/ Marketplaces (SEO)</h3>
+                                <button data-copy-target="aiMarketplaceTitle" class="copy-ai-btn text-gray-400 hover:text-blue-500 transition-colors" title="Copiar">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </div>
+                            <div id="aiMarketplaceTitle" class="mt-1 p-3 bg-gray-100 dark:bg-slate-700 rounded-md text-gray-800 dark:text-gray-100 animate-pulse h-12"></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-md font-semibold text-gray-700 dark:text-gray-200">Título Otimizado (E-commerce)</h3>
+                                <button data-copy-target="aiOptimizedTitle" class="copy-ai-btn text-gray-400 hover:text-blue-500 transition-colors" title="Copiar">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </div>
+                            <div id="aiOptimizedTitle" class="mt-1 p-3 bg-gray-100 dark:bg-slate-700 rounded-md text-gray-800 dark:text-gray-100 animate-pulse h-12"></div>
+                        </div>
+                        <div>
+                             <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Descrição de Venda</h3>
+                                <button data-copy-target="aiSalesDescription" class="copy-ai-btn text-gray-400 hover:text-blue-500 transition-colors" title="Copiar">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </div>
                              <div id="aiSalesDescription" class="mt-2 p-3 bg-gray-100 dark:bg-slate-700 rounded-md text-gray-800 dark:text-gray-100 animate-pulse h-24"></div>
                         </div>
                     </div>`;
                 
-                elements.aiContent.querySelector('button[data-copy-target="aiOptimizedTitle"]').onclick = function() { copyToClipboard('aiOptimizedTitle', this); };
-                elements.aiContent.querySelector('button[data-copy-target="aiSalesDescription"]').onclick = function() { copyToClipboard('aiSalesDescription', this); };
-
+                elements.aiContent.addEventListener('click', function(e) {
+                    const copyButton = e.target.closest('.copy-ai-btn');
+                    if (copyButton) {
+                        const targetId = copyButton.dataset.copyTarget;
+                        copyToClipboard(targetId, copyButton);
+                    }
+                });
 
                 const productInfo = Object.entries(product).map(([key, value]) => `${key}: ${value}`).join('\n');
                 const prompt = `Com base nas seguintes informações do produto, gere o título e a descrição:\n\n${productInfo}`;
+                
+                const systemInstruction = { parts: [{ text: `Você é um especialista em copywriting para e-commerce. Sua tarefa é criar três títulos distintos e uma descrição de vendas para produtos, em português do Brasil. As saídas devem ser: 1. 'tituloSistema': um título curto, em caixa alta, para uso interno em sistemas. 2. 'tituloMarketplace': um título otimizado para SEO com no máximo 60 caracteres, ideal para marketplaces. 3. 'tituloOtimizado': um título completo e detalhado para e-commerce próprio. 4. 'descricaoVenda': uma descrição dividida em "textoDescricao" (parágrafo de venda), "caracteristicas" (lista de destaques) e "especificacoes" (lista de detalhes técnicos). O resultado deve ser um JSON válido com a seguinte estrutura: {"tituloSistema": "...", "tituloMarketplace": "...", "tituloOtimizado": "...", "descricaoVenda": {"textoDescricao": "...", "caracteristicas": ["..."], "especificacoes": ["..."]}}.` }] };
+                const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction, generationConfig: { responseMimeType: "application/json" } };
 
                 try {
-                    const aiResult = await callGeminiAPI(prompt);
-                    const { tituloOtimizado, descricaoVenda } = aiResult;
+                    const aiResult = await callGenerativeApi(payload);
+                    const { tituloSistema, tituloMarketplace, tituloOtimizado, descricaoVenda } = aiResult;
                     
-                    const titleEl = document.getElementById('aiOptimizedTitle');
+                    const systemTitleEl = document.getElementById('aiSystemTitle');
+                    const marketplaceTitleEl = document.getElementById('aiMarketplaceTitle');
+                    const optimizedTitleEl = document.getElementById('aiOptimizedTitle');
                     const descriptionEl = document.getElementById('aiSalesDescription');
 
-                    if (titleEl && descriptionEl) {
-                        titleEl.textContent = tituloOtimizado;
-                        titleEl.classList.remove('animate-pulse', 'h-8');
+                    if (systemTitleEl && marketplaceTitleEl && optimizedTitleEl && descriptionEl) {
+                        systemTitleEl.textContent = tituloSistema;
+                        systemTitleEl.classList.remove('animate-pulse', 'h-8');
+
+                        marketplaceTitleEl.textContent = tituloMarketplace;
+                        marketplaceTitleEl.classList.remove('animate-pulse', 'h-12');
+                        
+                        optimizedTitleEl.textContent = tituloOtimizado;
+                        optimizedTitleEl.classList.remove('animate-pulse', 'h-12');
 
                         let descriptionHTML = `<p class="mb-2">${descricaoVenda.textoDescricao}</p>`;
                         if (descricaoVenda.caracteristicas && descricaoVenda.caracteristicas.length > 0) {
@@ -642,12 +899,233 @@
                 }
             };
             
+            // --- TITLE TOOL FUNCTIONS ---
+            const loadTemplates = () => {
+                const storedTemplates = localStorage.getItem('productTitleTemplates');
+                templates = storedTemplates ? JSON.parse(storedTemplates) : [];
+                renderTemplates();
+            };
+
+            const saveTemplates = () => {
+                localStorage.setItem('productTitleTemplates', JSON.stringify(templates));
+            };
+
+            const renderTemplates = () => {
+                elements.templatesListContainer.innerHTML = '';
+                if (templates.length === 0) {
+                    elements.templatesListContainer.innerHTML = '<p class="text-sm text-gray-500 text-center dark:text-gray-400">Nenhum modelo salvo.</p>';
+                    return;
+                }
+                templates.forEach((template, index) => {
+                    const el = document.createElement('div');
+                    el.className = 'p-2 border rounded-md bg-gray-50 dark:bg-gray-700 text-sm';
+                    el.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <strong class="text-indigo-700 dark:text-indigo-400">${template.category}</strong>
+                                <p class="text-gray-600 dark:text-gray-300 break-all">${template.title}</p>
+                            </div>
+                            <button data-index="${index}" class="remove-template-btn text-red-500 hover:text-red-700 font-bold ml-2 shrink-0">&times;</button>
+                        </div>`;
+                    elements.templatesListContainer.appendChild(el);
+                });
+            };
+            
+            elements.addTemplateBtn.addEventListener('click', () => {
+                const category = elements.templateCategoryInput.value.trim();
+                const title = elements.templateTitleInput.value.trim();
+                if (category && title) {
+                    templates.push({ category, title });
+                    saveTemplates();
+                    renderTemplates();
+                    elements.templateCategoryInput.value = '';
+                    elements.templateTitleInput.value = '';
+                } else {
+                    showToastNotification('Por favor, preencha a categoria e o título do modelo.', 'error');
+                }
+            });
+
+            elements.templatesListContainer.addEventListener('click', (e) => {
+                if (e.target.closest('.remove-template-btn')) {
+                    const index = parseInt(e.target.closest('.remove-template-btn').dataset.index, 10);
+                    templates.splice(index, 1);
+                    saveTemplates();
+                    renderTemplates();
+                }
+            });
+
+            const fetchTitleSuggestion = async (templateList, productDescription) => {
+                const systemPrompt = `Você é um assistente de e-commerce especialista em padronização de títulos de produtos. Sua tarefa é usar uma lista de modelos para formatar o título de um novo produto. Siga estas regras estritamente: 1. Analise a 'Descrição do Novo Produto'. 2. Compare a descrição com a 'Lista de Modelos Disponíveis' e encontre o modelo cuja categoria melhor corresponde ao novo produto. 3. Use o modelo escolhido como um guia exato para formatar um novo título. 4. Extraia todos os detalhes relevantes da descrição (marca, modelo, especificações como MP, MM, IR, etc.) e insira-os no novo título, mantendo a estrutura, ordem, capitalização e simbologia (hífens, sinais de mais) do modelo. 5. Responda APENAS com a string do título finalizado. Não inclua nenhuma outra palavra ou explicação.`;
+                const userPrompt = `**Lista de Modelos Disponíveis:**\n${JSON.stringify(templateList, null, 2)}\n\n**Descrição do Novo Produto:**\n"${productDescription}"`;
+                const payload = {
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    contents: [{ parts: [{ text: userPrompt }] }],
+                };
+                return callGenerativeApi(payload);
+            };
+
+            elements.generateBtn.addEventListener('click', async () => {
+                const description = elements.newProductDescriptionInput.value.trim();
+                if (templates.length === 0) return showToastNotification('Por favor, adicione pelo menos um modelo.', 'error');
+                if (!description) return showToastNotification('Por favor, descreva o novo produto.', 'error');
+
+                setLoading(true, elements.generateBtn, elements.btnText, elements.loader);
+                elements.resultsCard.classList.remove('hidden');
+                elements.suggestionOutput.textContent = '';
+                elements.errorMessage.textContent = '';
+                elements.copyBtn.classList.add('hidden');
+                
+                try {
+                    const suggestion = await fetchTitleSuggestion(templates, description);
+                    if (suggestion && typeof suggestion === 'string') {
+                        elements.suggestionOutput.textContent = suggestion;
+                        elements.copyBtn.classList.remove('hidden');
+                    } else {
+                        throw new Error("A IA não retornou uma sugestão válida.");
+                    }
+                } catch (error) {
+                    console.error('Erro ao buscar sugestão:', error);
+                    elements.errorMessage.textContent = 'Ocorreu um erro ao gerar o título.';
+                } finally {
+                    setLoading(false, elements.generateBtn, elements.btnText, elements.loader);
+                }
+            });
+
+            elements.copyBtn.addEventListener('click', () => {
+                const textToCopy = elements.suggestionOutput.textContent;
+                const originalText = elements.copyBtn.textContent;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    elements.copyBtn.textContent = 'Copiado!';
+                    setTimeout(() => { elements.copyBtn.textContent = originalText; }, 2000);
+                }).catch(err => console.error('Falha ao copiar:', err));
+            });
+
+            elements.csvFileInput.addEventListener('change', () => {
+                if(elements.csvFileInput.files.length > 0){
+                    elements.batchFileName.textContent = elements.csvFileInput.files[0].name;
+                }
+            });
+
+            elements.processSheetBtn.addEventListener('click', () => {
+                const file = elements.csvFileInput.files[0];
+                const titleColumn = elements.titleColumnNameInput.value.trim();
+
+                if (!file) return showToastNotification('Por favor, selecione um arquivo.', 'error');
+                if (!titleColumn) return showToastNotification('Por favor, especifique o nome da coluna de títulos.', 'error');
+                if (templates.length === 0) return showToastNotification('Adicione pelo menos um modelo antes de processar.', 'error');
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const workbook = XLSX.read(event.target.result, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const data = XLSX.utils.sheet_to_json(worksheet);
+                        processBatchData(data, titleColumn);
+                    } catch(e) {
+                        showToastNotification('Erro ao processar o arquivo Excel.', 'error');
+                        console.error(e);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+
+            elements.stopProcessBtn.addEventListener('click', () => {
+                stopProcessing = true;
+            });
+            
+            async function processBatchData(data, titleColumn) {
+                if (data.length === 0 || !data[0].hasOwnProperty(titleColumn)) {
+                    return showToastNotification(`A coluna "${titleColumn}" não foi encontrada na planilha.`, 'error');
+                }
+                
+                elements.batchResultsSection.classList.remove('hidden');
+                elements.resultsTableBody.innerHTML = '';
+                correctedSheetData = [];
+                stopProcessing = false;
+                elements.processSheetBtn.classList.add('hidden');
+                elements.stopProcessBtn.classList.remove('hidden');
+                elements.csvFileInput.disabled = true;
+                elements.titleColumnNameInput.disabled = true;
+
+                for (let i = 0; i < data.length; i++) {
+                    if (stopProcessing) {
+                        elements.progressIndicator.textContent = `Processamento interrompido pelo usuário na linha ${i + 1}.`;
+                        break;
+                    }
+
+                    const row = data[i];
+                    const originalTitle = row[titleColumn];
+                    elements.progressIndicator.textContent = `Processando linha ${i + 1} de ${data.length}...`;
+
+                    if (originalTitle) {
+                        try {
+                            const correctedTitle = await fetchTitleSuggestion(templates, originalTitle);
+                            const newRow = { ...row };
+                            newRow[titleColumn] = correctedTitle;
+                            correctedSheetData.push(newRow);
+
+                            const tableRow = document.createElement('tr');
+                            tableRow.innerHTML = `<td>${originalTitle}</td><td>${correctedTitle || 'Falha'}</td>`;
+                            elements.resultsTableBody.appendChild(tableRow);
+                        } catch (error) {
+                            console.error(`Erro na linha ${i+1}:`, error);
+                            const newRow = { ...row };
+                            newRow[titleColumn] = `ERRO: ${originalTitle}`;
+                            correctedSheetData.push(newRow);
+
+                            const tableRow = document.createElement('tr');
+                            tableRow.innerHTML = `<td>${originalTitle}</td><td class="text-red-500">Falha ao corrigir</td>`;
+                            elements.resultsTableBody.appendChild(tableRow);
+                        }
+                    } else {
+                         correctedSheetData.push(row);
+                    }
+                }
+                
+                if (!stopProcessing) {
+                    elements.progressIndicator.textContent = `Processamento concluído! ${data.length} linhas processadas.`;
+                }
+
+                elements.processSheetBtn.classList.remove('hidden');
+                elements.stopProcessBtn.classList.add('hidden');
+                elements.csvFileInput.disabled = false;
+                elements.titleColumnNameInput.disabled = false;
+            }
+
+            function downloadExcel(format) {
+                if (correctedSheetData.length === 0) return;
+                const worksheet = XLSX.utils.json_to_sheet(correctedSheetData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Títulos Corrigidos");
+                const fileName = `planilha_corrigida.${format || 'xlsx'}`;
+                XLSX.writeFile(workbook, fileName);
+            }
+
+            elements.downloadXlsxBtn.addEventListener('click', () => downloadExcel('xlsx'));
+            
+            elements.downloadCsvBtn.addEventListener('click', () => {
+                if (correctedSheetData.length === 0) return;
+                const csv = Papa.unparse(correctedSheetData);
+                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "planilha_corrigida.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+            // Initialize all parts
             updateDatabaseSummaryUI();
+            updateFileListView();
+            loadTemplates();
             elements.searchInput.addEventListener('input', searchProducts);
         });
     </script>
 </body>
 </html>
-
 
 
