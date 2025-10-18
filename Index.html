@@ -552,7 +552,7 @@
                 
                 setTimeout(() => {
                     toast.classList.add('translate-x-[120%]');
-                    setTimeout(() => toast.remove(), 300);
+                    setTimeout(() => toast.remove(), 3000);
                 }, 3000);
             };
 
@@ -1134,7 +1134,7 @@
                 const productInfo = Object.entries(product).map(([key, value]) => `${key}: ${value}`).join('\n');
                 const prompt = `Com base nas seguintes informações do produto, gere o título e a descrição:\n\n${productInfo}`;
                 
-                const systemInstruction = { parts: [{ text: `Você é um especialista em copywriting para e-commerce. Sua tarefa é criar três títulos distintos e uma descrição de vendas para produtos, em português do Brasil. As saídas devem ser: 1. 'tituloSistema': um título curto, em caixa alta, para uso interno em sistemas. 2. 'tituloMarketplace': um título otimizado para SEO com no máximo 60 caracteres, ideal para marketplaces. 3. 'tituloOtimizado': um título completo e detalhado para e-commerce próprio. 4. 'descricaoVenda': uma descrição dividida em "textoDescricao" (parágrafo de venda), "caracteristicas" (lista de destaques) e "especificacoes" (lista de detalhes técnicos). O resultado deve ser um JSON válido com a seguinte estrutura: {"tituloSistema": "...", "tituloMarketplace": "...", "tituloOtimizado": "...", "descricaoVenda": {"textoDescricao": "...", "caracteristicas": ["..."], "especificacoes": ["..."]}}` }] };
+                const systemInstruction = { parts: [{ text: `Você é um especialista em copywriting para e-commerce. Sua tarefa é criar três títulos distintos e uma descrição de vendas para produtos, em português do Brasil. As saídas devem ser: 1. 'tituloSistema': um título curto, em CAIXA ALTA, e SEM ACENTOS ou caracteres especiais, para uso interno em sistemas. 2. 'tituloMarketplace': um título otimizado para SEO com no máximo 60 caracteres, ideal para marketplaces. 3. 'tituloOtimizado': um título completo e detalhado para e-commerce próprio. 4. 'descricaoVenda': uma descrição dividida em "textoDescricao" (parágrafo de venda), "caracteristicas" (lista de destaques) e "especificacoes" (lista de detalhes técnicos). O resultado deve ser um JSON válido com a seguinte estrutura: {"tituloSistema": "...", "tituloMarketplace": "...", "tituloOtimizado": "...", "descricaoVenda": {"textoDescricao": "...", "caracteristicas": ["..."], "especificacoes": ["..."]}}.` }] };
                 const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction, generationConfig: { responseMimeType: "application/json" } };
 
                 try {
@@ -1257,7 +1257,13 @@ Siga estas regras DE FORMA ESTRITA E OBRIGATÓRIA:
                         showToastNotification('Por favor, adicione pelo menos um Modelo por Categoria.', 'error');
                          throw new Error('Nenhum modelo salvo.');
                     }
-                    systemPrompt = `Você é um assistente de e-commerce especialista em padronização de títulos. Sua tarefa é usar uma lista de modelos para formatar o título de um produto. Regras: 1. Analise a 'Descrição do Produto'. 2. Compare-a com a 'Lista de Modelos' e encontre o modelo da categoria que melhor corresponde. 3. Use o modelo escolhido como um guia exato para formatar o novo título, extraindo os detalhes relevantes da descrição e mantendo a estrutura, ordem e capitalização do modelo. 4. Responda APENAS com a string do título final.`;
+                    systemPrompt = `Você é um assistente de e-commerce especialista em padronização de títulos. Sua tarefa é usar uma lista de modelos para formatar o título de um produto.
+Regras:
+1. Analise a 'Descrição do Produto'.
+2. Compare-a com a 'Lista de Modelos' e encontre o modelo da categoria que melhor corresponde.
+3. Use o modelo escolhido como um guia exato para formatar o novo título, extraindo os detalhes relevantes da descrição e mantendo a estrutura, ordem e capitalização do modelo.
+4. **FALHA:** Se NENHUM modelo corresponder à descrição, sua tarefa é padronizar o título original da seguinte forma: converta-o inteiramente para CAIXA ALTA e remova todos os acentos e caracteres especiais (como "ç", "ã", "-", "/").
+5. **RESPOSTA FINAL:** Sua resposta DEVE ser APENAS a string do título final (seja o título formatado pelo modelo ou o título original padronizado). Não inclua nenhuma outra palavra ou explicação.`;
                     userPrompt = `**Lista de Modelos:**\n${JSON.stringify(templates, null, 2)}\n\n**Descrição do Produto:**\n"${productDescription}"`;
                 }
 
