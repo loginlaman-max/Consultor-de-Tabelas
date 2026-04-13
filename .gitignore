@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.log
+backend/mercos.db
+backend/mercos.db-journal
+backend/mercos.db-wal
+backend/mercos.db-shm
+.DS_Store
